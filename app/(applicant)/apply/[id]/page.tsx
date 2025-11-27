@@ -1,0 +1,399 @@
+/**
+ * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/apply/[programId]/page.tsx
+ * PURPOSE: Application form to apply for a grant program
+ */
+
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { toast } from 'sonner';
+import Link from 'next/link';
+import FileUpload from '@/components/shared/FileUpload';
+
+export default function ApplyPage() {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useUserProfile();
+  const draftId = searchParams.get('draft');
+
+  const [program, setProgram] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [applicationId, setApplicationId] = useState<string | null>(draftId);
+
+  const [formData, setFormData] = useState({
+    motivation: '',
+    goals: '',
+    experience: '',
+    additional_info: ''
+  });
+
+  useEffect(() => {
+    if (params.programId) {
+      fetchProgram();
+      if (draftId) {
+        loadDraft();
+      }
+    }
+  }, [params.programId, draftId]);
+
+  const fetchProgram = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('id', params.programId)
+        .single();
+
+      if (error) throw error;
+      setProgram(data);
+    } catch (error: any) {
+      console.error('Error fetching program:', error);
+      toast.error('Failed to load program details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDraft = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('id', draftId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data.application_data) {
+        setFormData(data.application_data);
+      }
+    } catch (error: any) {
+      console.error('Error loading draft:', error);
+      toast.error('Failed to load draft');
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveDraft = async () => {
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      if (applicationId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('applications')
+          .update({
+            application_data: formData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', applicationId);
+
+        if (error) throw error;
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('applications')
+          .insert({
+            program_id: params.programId,
+            applicant_id: user.id,
+            status: 'draft',
+            application_data: formData
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        setApplicationId(data.id);
+      }
+
+      toast.success('Draft saved', {
+        description: 'You can continue this application later'
+      });
+
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+      toast.error('Failed to save draft', {
+        description: error.message
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    // Validate
+    if (!formData.motivation.trim()) {
+      toast.error('Motivation is required');
+      return;
+    }
+    if (!formData.goals.trim()) {
+      toast.error('Goals are required');
+      return;
+    }
+
+    if (!user) {
+      toast.error('You must be logged in');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      let finalApplicationId = applicationId;
+
+      if (applicationId) {
+        // Update existing draft to submitted
+        const { error } = await supabase
+          .from('applications')
+          .update({
+            status: 'submitted',
+            application_data: formData,
+            submitted_at: new Date().toISOString()
+          })
+          .eq('id', applicationId);
+
+        if (error) throw error;
+      } else {
+        // Create new application as submitted
+        const { data, error } = await supabase
+          .from('applications')
+          .insert({
+            program_id: params.programId,
+            applicant_id: user.id,
+            status: 'submitted',
+            application_data: formData,
+            submitted_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        finalApplicationId = data.id;
+      }
+
+      toast.success('Application submitted!', {
+        description: 'We will review your application and get back to you soon.',
+        action: {
+          label: 'View Application',
+          onClick: () => router.push(`/applications/${finalApplicationId}`)
+        }
+      });
+
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        router.push('/applications');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error submitting application:', error);
+      toast.error('Submission failed', {
+        description: error.message
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!program) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground mb-4">Program not found</p>
+        <Link href="/programs">
+          <Button variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Programs
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      {/* Back Button */}
+      <Link href={`/programs/${params.programId}`}>
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Program
+        </Button>
+      </Link>
+
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold">Apply for {program.title}</h1>
+        <p className="text-muted-foreground mt-2">
+          Please provide detailed responses to help us understand your needs and goals
+        </p>
+      </div>
+
+      {/* Application Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Application Form</CardTitle>
+          <CardDescription>
+            Fields marked with * are required
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Motivation */}
+          <div className="space-y-2">
+            <Label htmlFor="motivation">
+              Why are you applying for this program? *
+            </Label>
+            <Textarea
+              id="motivation"
+              placeholder="Explain your motivation and what makes you a good fit..."
+              value={formData.motivation}
+              onChange={(e) => handleChange('motivation', e.target.value)}
+              rows={5}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.motivation.length} characters
+            </p>
+          </div>
+
+          {/* Goals */}
+          <div className="space-y-2">
+            <Label htmlFor="goals">
+              What are your goals and expected outcomes? *
+            </Label>
+            <Textarea
+              id="goals"
+              placeholder="Describe what you hope to achieve..."
+              value={formData.goals}
+              onChange={(e) => handleChange('goals', e.target.value)}
+              rows={5}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.goals.length} characters
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="space-y-2">
+            <Label htmlFor="experience">
+              Relevant experience or background
+            </Label>
+            <Textarea
+              id="experience"
+              placeholder="Share any relevant experience, skills, or achievements..."
+              value={formData.experience}
+              onChange={(e) => handleChange('experience', e.target.value)}
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.experience.length} characters
+            </p>
+          </div>
+
+          {/* Additional Info */}
+          <div className="space-y-2">
+            <Label htmlFor="additional_info">
+              Additional information
+            </Label>
+            <Textarea
+              id="additional_info"
+              placeholder="Anything else you'd like us to know..."
+              value={formData.additional_info}
+              onChange={(e) => handleChange('additional_info', e.target.value)}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              {formData.additional_info.length} characters
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* File Upload */}
+      {applicationId && (
+        <FileUpload
+          applicationId={applicationId}
+          documentType="supporting_document"
+          label="Upload Supporting Documents"
+          onUploadComplete={(url, name) => {
+            toast.success('Document uploaded', {
+              description: name
+            });
+          }}
+        />
+      )}
+
+      {!applicationId && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Save as draft first to enable document uploads
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-3 pb-8">
+        <Button
+          variant="outline"
+          onClick={handleSaveDraft}
+          disabled={saving || submitting}
+          className="flex-1"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Save as Draft
+            </>
+          )}
+        </Button>
+        
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || submitting}
+          className="flex-1"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Submit Application'
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
