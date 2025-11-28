@@ -1,6 +1,6 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/app/api/opportunities/route.ts
- * PURPOSE: Manage partner opportunities (internships, apprenticeships)
+ * PURPOSE: Manage partner opportunities
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .from('partner_opportunities')
       .select(`
         *,
-        partner_organization:partner_organizations!partner_id (
+        partner:partner_organizations!partner_opportunities_partner_id_fkey (
           organization_name
         )
       `);
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (type) {
-      query = query.eq('opportunity_type', type);
+      query = query.eq('type', type);
     }
 
     if (partnerId) {
@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is partner
+    // Get user profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, id')
       .eq('user_id', user.id)
       .single();
 
@@ -91,13 +91,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get partner organization
+    const { data: organization } = await supabase
+      .from('partner_organizations')
+      .select('id')
+      .eq('user_id', profile.id)
+      .single();
+
+    if (!organization) {
+      return NextResponse.json(
+        { error: 'Partner organization not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
 
     const { data, error } = await supabase
       .from('partner_opportunities')
       .insert({
         ...body,
-        partner_id: user.id
+        partner_id: organization.id
       })
       .select()
       .single();
@@ -139,6 +153,20 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Get partner organization
+    const { data: organization } = await supabase
+      .from('partner_organizations')
+      .select('id')
+      .eq('user_id', profile?.id)
+      .single();
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -154,7 +182,7 @@ export async function PATCH(request: NextRequest) {
       .from('partner_opportunities')
       .update(updates)
       .eq('id', id)
-      .eq('partner_id', user.id)
+      .eq('partner_id', organization?.id)
       .select()
       .single();
 
@@ -195,6 +223,20 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Get partner organization
+    const { data: organization } = await supabase
+      .from('partner_organizations')
+      .select('id')
+      .eq('user_id', profile?.id)
+      .single();
+
     const { id } = await request.json();
 
     if (!id) {
@@ -208,7 +250,7 @@ export async function DELETE(request: NextRequest) {
       .from('partner_opportunities')
       .delete()
       .eq('id', id)
-      .eq('partner_id', user.id);
+      .eq('partner_id', organization?.id);
 
     if (error) {
       return NextResponse.json(

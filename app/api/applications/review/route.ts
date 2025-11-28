@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
       .from('applications')
       .update({
         status,
-        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         reviewer_notes
       })
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
           title,
           type
         ),
-        applicant:profiles!applicant_id (
+        applicant:profiles!applications_applicant_id_fkey (
           full_name,
           email
         )

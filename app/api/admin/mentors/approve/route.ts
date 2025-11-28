@@ -39,12 +39,20 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
-      mentor_profile_id,
+      application_id,
       status, // 'approved' or 'rejected'
-      admin_notes
+      admin_notes,
+      // Mentor profile data if approved
+      bio,
+      headline,
+      expertise_areas,
+      skills,
+      years_of_experience,
+      max_mentees,
+      linkedin_url
     } = body;
 
-    if (!mentor_profile_id || !status) {
+    if (!application_id || !status) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -58,54 +66,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update mentor profile
-    const updateData: any = {
-      status,
-      reviewed_by: user.id,
-      reviewed_at: new Date().toISOString()
-    };
+    // Get mentor application
+    const { data: application, error: appError } = await supabase
+      .from('mentor_applications')
+      .select('*')
+      .eq('id', application_id)
+      .single();
 
-    if (admin_notes) {
-      updateData.admin_notes = admin_notes;
+    if (appError || !application) {
+      return NextResponse.json(
+        { error: 'Application not found' },
+        { status: 404 }
+      );
     }
 
-    // If approved, set availability to available
-    if (status === 'approved') {
-      updateData.availability_status = 'available';
-    }
-
-    const { data, error } = await supabase
-      .from('mentor_profiles')
-      .update(updateData)
-      .eq('id', mentor_profile_id)
+    // Update application status
+    const { data: updatedApp, error: updateError } = await supabase
+      .from('mentor_applications')
+      .update({
+        status,
+        admin_notes,
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', application_id)
       .select(`
         *,
-        profile:profiles!user_id (
+        profile:profiles!mentor_applications_profile_id_fkey (
+          id,
+          user_id,
           full_name,
-          email,
-          avatar_url
+          email
         )
       `)
       .single();
 
-    if (error) {
+    if (updateError) {
       return NextResponse.json(
-        { error: error.message },
+        { error: updateError.message },
         { status: 500 }
       );
     }
 
-    // If approved, update the user's role to mentor in profiles table
+    // If approved, create mentor profile and update user role
     if (status === 'approved') {
+      if (!bio || !expertise_areas || !years_of_experience || !max_mentees) {
+        return NextResponse.json(
+          { error: 'Missing mentor profile data for approval' },
+          { status: 400 }
+        );
+      }
+
+      // Create mentor profile
+      const { error: profileError } = await supabase
+        .from('mentor_profiles')
+        .insert({
+          user_id: updatedApp.profile.user_id,
+          bio,
+          headline,
+          expertise_areas,
+          skills: skills || [],
+          years_of_experience,
+          max_mentees,
+          linkedin_url,
+          availability_status: 'available'
+        });
+
+      if (profileError) {
+        console.error('Error creating mentor profile:', profileError);
+        return NextResponse.json(
+          { error: 'Failed to create mentor profile' },
+          { status: 500 }
+        );
+      }
+
+      // Update user role to mentor
       await supabase
         .from('profiles')
         .update({ role: 'mentor' })
-        .eq('user_id', data.user_id);
+        .eq('id', updatedApp.profile.id);
     }
 
     return NextResponse.json({
       success: true,
-      data
+      data: updatedApp
     });
   } catch (error: any) {
     console.error('Approve mentor error:', error);

@@ -1,16 +1,25 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/app/api/auth/register/route.ts
- * PURPOSE: User registration/signup
+ * PURPOSE: User registration/signup - handles profile creation manually
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
+
+// Use service role for admin operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // You need this key
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-
     const body = await request.json();
     const { email, password, full_name, role } = body;
 
@@ -39,24 +48,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Create auth user with admin client
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
-        data: {
-          full_name,
-          role
-        }
+      email_confirm: true, // Auto-confirm email for testing
+      user_metadata: {
+        full_name,
+        role
       }
     });
 
     if (authError) {
       console.error('Auth signup error:', authError);
       
-      // Handle specific error cases
-      if (authError.message.includes('already registered')) {
+      if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
         return NextResponse.json(
           { error: 'Email already registered' },
           { status: 400 }
@@ -76,31 +82,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create profile
-    const { error: profileError } = await supabase
+    // Create profile using admin client (bypasses RLS)
+    const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
         user_id: authData.user.id,
         email,
         full_name,
-        role,
-        email_verified: false
+        role
       });
 
     if (profileError) {
       console.error('Profile creation error:', profileError);
       
-      // If profile creation fails, we should ideally delete the auth user
-      // but Supabase doesn't allow this from client, so we log the error
+      // If profile creation fails, delete the auth user
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      
       return NextResponse.json(
-        { error: 'Failed to create user profile' },
+        { 
+          error: 'Failed to create user profile',
+          details: profileError.message 
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Registration successful. Please check your email to verify your account.',
+      message: 'Registration successful. You can now login.',
       user: {
         id: authData.user.id,
         email: authData.user.email

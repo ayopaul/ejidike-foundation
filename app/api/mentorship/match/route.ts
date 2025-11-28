@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Check if user is admin
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, id')
       .eq('user_id', user.id)
       .single();
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { mentor_id, mentee_id } = body;
+    const { mentor_id, mentee_id, program_id, goals } = body;
 
     if (!mentor_id || !mentee_id) {
       return NextResponse.json(
@@ -48,17 +48,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if mentor profile exists and is active
+    // Check if mentor profile exists
     const { data: mentorProfile, error: mentorError } = await supabase
       .from('mentor_profiles')
       .select('*')
       .eq('user_id', mentor_id)
-      .eq('status', 'approved')
       .single();
 
     if (mentorError || !mentorProfile) {
       return NextResponse.json(
-        { error: 'Mentor not found or not approved' },
+        { error: 'Mentor profile not found' },
         { status: 400 }
       );
     }
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
     const { data: menteeProfile, error: menteeError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', mentee_id)
+      .eq('id', mentee_id)
       .single();
 
     if (menteeError || !menteeProfile) {
@@ -77,7 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if match already exists
+    // Check if active match already exists
     const { data: existingMatch } = await supabase
       .from('mentorship_matches')
       .select('*')
@@ -99,17 +98,19 @@ export async function POST(request: NextRequest) {
       .insert({
         mentor_id,
         mentee_id,
+        program_id,
         status: 'active',
-        matched_at: new Date().toISOString()
+        goals,
+        start_date: new Date().toISOString()
       })
       .select(`
         *,
-        mentor:profiles!mentor_id (
+        mentor:profiles!mentorship_matches_mentor_id_fkey (
           full_name,
           email,
           avatar_url
         ),
-        mentee:profiles!mentee_id (
+        mentee:profiles!mentorship_matches_mentee_id_fkey (
           full_name,
           email,
           avatar_url
@@ -157,10 +158,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
 
-    // Get user role
+    // Get user profile
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, id')
       .eq('user_id', user.id)
       .single();
 
@@ -168,12 +169,12 @@ export async function GET(request: NextRequest) {
       .from('mentorship_matches')
       .select(`
         *,
-        mentor:profiles!mentor_id (
+        mentor:profiles!mentorship_matches_mentor_id_fkey (
           full_name,
           email,
           avatar_url
         ),
-        mentee:profiles!mentee_id (
+        mentee:profiles!mentorship_matches_mentee_id_fkey (
           full_name,
           email,
           avatar_url
@@ -182,9 +183,9 @@ export async function GET(request: NextRequest) {
 
     // Filter by role
     if (profile?.role === 'mentor') {
-      query = query.eq('mentor_id', user.id);
+      query = query.eq('mentor_id', profile.id);
     } else if (profile?.role === 'applicant') {
-      query = query.eq('mentee_id', user.id);
+      query = query.eq('mentee_id', profile.id);
     }
     // Admins see all matches
 
@@ -193,7 +194,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status);
     }
 
-    query = query.order('matched_at', { ascending: false });
+    query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
 

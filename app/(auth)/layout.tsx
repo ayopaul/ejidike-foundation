@@ -1,19 +1,18 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/app/(auth)/layout.tsx
- * PURPOSE: Layout for authentication pages (login, register)
+ * PURPOSE: Layout for authentication pages
  */
 
-import { ReactNode } from 'react';
+import { Suspense } from 'react';
 
-export const metadata = {
-  title: 'Authentication - Ejidike Foundation',
-  description: 'Sign in or create an account',
-};
-
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="min-h-screen">
+    <Suspense fallback={<div>Loading...</div>}>
       {children}
-    </div>
+    </Suspense>
   );
 }

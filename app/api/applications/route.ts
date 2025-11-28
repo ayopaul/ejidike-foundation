@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
           type,
           budget
         ),
-        applicant:profiles!applicant_id (
+        applicant:profiles!applications_applicant_id_fkey (
           full_name,
           email
         )
@@ -47,13 +47,13 @@ export async function GET(request: NextRequest) {
     // Get user profile to check role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, id')
       .eq('user_id', user.id)
       .single();
 
     // Filter by user if not admin
     if (profile?.role !== 'admin') {
-      query = query.eq('applicant_id', user.id);
+      query = query.eq('applicant_id', profile?.id);
     }
 
     // Apply filters
@@ -103,6 +103,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get user profile ID
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
     const {
       program_id,
@@ -121,7 +135,7 @@ export async function POST(request: NextRequest) {
     const { data: application, error: appError } = await supabase
       .from('applications')
       .insert({
-        applicant_id: user.id,
+        applicant_id: profile.id,
         program_id,
         application_data,
         status: 'draft',
@@ -141,9 +155,11 @@ export async function POST(request: NextRequest) {
     if (documents.length > 0) {
       const documentsToInsert = documents.map((doc: any) => ({
         application_id: application.id,
-        document_type: doc.document_type,
-        file_url: doc.file_url,
-        file_name: doc.file_name
+        file_type: doc.file_type,
+        file_path: doc.file_path,
+        file_name: doc.file_name,
+        file_size: doc.file_size,
+        uploaded_by: profile.id
       }));
 
       const { error: docsError } = await supabase
@@ -185,6 +201,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, id')
+      .eq('user_id', user.id)
+      .single();
+
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -195,13 +218,6 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Get user role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
     // Build query
     let query = supabase
       .from('applications')
@@ -210,7 +226,7 @@ export async function PATCH(request: NextRequest) {
 
     // Non-admins can only update their own applications
     if (profile?.role !== 'admin') {
-      query = query.eq('applicant_id', user.id);
+      query = query.eq('applicant_id', profile?.id);
     }
 
     const { data, error } = await query.select().single();

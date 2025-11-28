@@ -8,215 +8,269 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     password: '',
     confirm_password: '',
-    role: 'applicant'
+    role: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+    setError(''); // Clear error on input change
+  };
+
+  const handleRoleChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      role: value
+    }));
+    setError('');
+  };
+
+  const validateForm = () => {
+    if (!formData.full_name || !formData.email || !formData.password || !formData.confirm_password || !formData.role) {
+      setError('Please fill in all fields');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+
+    if (formData.password !== formData.confirm_password) {
+      setError('Passwords do not match');
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validation
-    if (!formData.full_name || !formData.email || !formData.password) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    if (formData.password !== formData.confirm_password) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
     setLoading(true);
+    setError('');
+    setSuccess(false);
+
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.full_name
-          }
-        }
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name,
+          role: formData.role
+        })
       });
 
-      if (authError) throw authError;
+      const data = await response.json();
 
-      if (!authData.user) {
-        throw new Error('Registration failed - no user returned');
+      if (!response.ok) {
+        setError(data.error || 'Registration failed');
+        setLoading(false);
+        return;
       }
 
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          full_name: formData.full_name,
-          email: formData.email,
-          role: formData.role
-        });
-
-      if (profileError) throw profileError;
-
-      toast.success('Account created successfully!', {
-        description: 'Please check your email to verify your account'
-      });
+      // Success
+      setSuccess(true);
+      toast.success('Account created successfully!');
 
       // Redirect to login after 2 seconds
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      
-      if (error.message.includes('already registered')) {
-        toast.error('Email already exists', {
-          description: 'Please use a different email or sign in'
-        });
-      } else {
-        toast.error('Registration failed', {
-          description: error.message
-        });
-      }
-    } finally {
+    } catch (err: any) {
+      console.error('Registration error:', err);
+      setError(err.message || 'An unexpected error occurred');
       setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-emerald-100">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle2 className="h-16 w-16 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl">Registration Successful!</CardTitle>
+            <CardDescription>
+              Your account has been created. Redirecting to login...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
           <CardDescription className="text-center">
-            Join Ejidike Foundation and start your journey
+            Join the Ejidike Foundation community
           </CardDescription>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {/* Full Name */}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name *</Label>
+              <Label htmlFor="full_name">Full Name</Label>
               <Input
                 id="full_name"
+                name="full_name"
+                type="text"
                 placeholder="John Doe"
                 value={formData.full_name}
-                onChange={(e) => handleChange('full_name', e.target.value)}
-                required
+                onChange={handleChange}
                 disabled={loading}
+                required
+                autoComplete="name"
               />
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
                 value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                required
+                onChange={handleChange}
                 disabled={loading}
+                required
+                autoComplete="email"
               />
             </div>
 
-            {/* Role */}
             <div className="space-y-2">
-              <Label htmlFor="role">I am a *</Label>
-              <Select 
-                value={formData.role} 
-                onValueChange={(value) => handleChange('role', value)}
+              <Label htmlFor="role">I am a...</Label>
+              <Select
+                value={formData.role}
+                onValueChange={handleRoleChange}
                 disabled={loading}
+                required
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="applicant">Grant Applicant</SelectItem>
+                  <SelectItem value="applicant">Applicant (Student/Entrepreneur)</SelectItem>
                   <SelectItem value="mentor">Mentor</SelectItem>
                   <SelectItem value="partner">Partner Organization</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
                 value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                required
+                onChange={handleChange}
                 disabled={loading}
+                required
+                autoComplete="new-password"
               />
               <p className="text-xs text-muted-foreground">
                 Must be at least 6 characters
               </p>
             </div>
 
-            {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirm_password">Confirm Password *</Label>
+              <Label htmlFor="confirm_password">Confirm Password</Label>
               <Input
                 id="confirm_password"
+                name="confirm_password"
                 type="password"
                 placeholder="••••••••"
                 value={formData.confirm_password}
-                onChange={(e) => handleChange('confirm_password', e.target.value)}
-                required
+                onChange={handleChange}
                 disabled={loading}
+                required
+                autoComplete="new-password"
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4">
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
                 </>
               ) : (
                 'Create Account'
               )}
             </Button>
-            
-            <p className="text-sm text-center text-muted-foreground">
+
+            <div className="text-sm text-center text-muted-foreground">
               Already have an account?{' '}
               <Link href="/login" className="text-primary hover:underline font-medium">
                 Sign in
+              </Link>
+            </div>
+
+            <p className="text-xs text-center text-muted-foreground">
+              By creating an account, you agree to our{' '}
+              <Link href="/legal" className="underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/legal" className="underline">
+                Privacy Policy
               </Link>
             </p>
           </CardFooter>
