@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Loader2, Save, Upload } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface ProfileFormProps {
   initialData: any;
@@ -26,15 +28,21 @@ export default function ProfileForm({ initialData, onSubmit, onAvatarUpload }: P
     full_name: initialData?.full_name || '',
     email: initialData?.email || '',
     phone: initialData?.phone || '',
-    location: initialData?.location || '',
-    date_of_birth: initialData?.date_of_birth?.split('T')[0] || ''
+    location: initialData?.location || ''
   });
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>(
+    initialData?.date_of_birth ? new Date(initialData.date_of_birth) : undefined
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(formData);
+      const dataToSubmit = {
+        ...formData,
+        date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null
+      };
+      await onSubmit(dataToSubmit);
     } finally {
       setLoading(false);
     }
@@ -150,11 +158,10 @@ export default function ProfileForm({ initialData, onSubmit, onAvatarUpload }: P
 
           <div className="space-y-2">
             <Label htmlFor="date_of_birth">Date of Birth</Label>
-            <Input
-              id="date_of_birth"
-              type="date"
-              value={formData.date_of_birth}
-              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+            <DatePicker
+              date={dateOfBirth}
+              onDateChange={setDateOfBirth}
+              placeholder="Select your birth date"
             />
           </div>
         </CardContent>

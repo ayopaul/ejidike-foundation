@@ -77,7 +77,7 @@ export default function ProgramsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
+      
         <div className="space-y-6">
           {/* Header */}
           <div>
@@ -152,7 +152,7 @@ export default function ProgramsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button asChild className="flex-1">
+                      <Button asChild className="flex-1 rounded-sm">
                         <Link href={`/programs/${program.id}`}>
                           View Details
                         </Link>
@@ -169,7 +169,7 @@ export default function ProgramsPage() {
             </div>
           )}
         </div>
-      </DashboardLayout>
+      
     </ProtectedRoute>
   );
 }

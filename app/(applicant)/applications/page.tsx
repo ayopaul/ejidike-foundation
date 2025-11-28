@@ -121,7 +121,7 @@ export default function ApplicationsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
+     
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -240,7 +240,7 @@ export default function ApplicationsPage() {
             </Tabs>
           )}
         </div>
-      </DashboardLayout>
+      
     </ProtectedRoute>
   );
 }

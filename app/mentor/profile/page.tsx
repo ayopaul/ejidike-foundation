@@ -77,7 +77,7 @@ export default function MentorProfilePage() {
         .from('profiles')
         .update({
           full_name: userInfo.full_name,
-          phone: userInfo.phone
+          phone: userInfo.phone || null
         })
         .eq('user_id', user?.id);
 

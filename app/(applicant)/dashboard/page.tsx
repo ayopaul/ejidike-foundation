@@ -80,17 +80,29 @@ export default function ApplicantDashboard() {
       setOpenPrograms(programs || []);
 
       // Check mentorship status
-      const { data: mentorship } = await supabase
+      const { data: mentorship, error: mentorshipError } = await supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentor:profiles!mentorship_matches_mentor_id_fkey(*)
-        `)
+        .select('*')
         .eq('mentee_id', user?.id)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
-      setMentorshipStatus(mentorship);
+      if (mentorshipError) {
+        console.error('Error fetching mentorship:', mentorshipError);
+      }
+
+      // If match exists, fetch mentor profile separately
+      if (mentorship) {
+        const { data: mentorProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', mentorship.mentor_id)
+          .single();
+
+        setMentorshipStatus({ ...mentorship, mentor: mentorProfile });
+      } else {
+        setMentorshipStatus(null);
+      }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -115,7 +127,7 @@ export default function ApplicantDashboard() {
 
   return (
     <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
+   
         <div className="space-y-6">
           {/* Welcome Section */}
           <div>
@@ -372,7 +384,7 @@ export default function ApplicantDashboard() {
             </CardContent>
           </Card>
         </div>
-      </DashboardLayout>
+
     </ProtectedRoute>
   );
 }

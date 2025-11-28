@@ -3,12 +3,18 @@
  * PURPOSE: Unauthorized access page
  */
 
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ShieldAlert } from 'lucide-react';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function UnauthorizedPage() {
+  const { profile, role, loading } = useUserProfile();
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
@@ -22,6 +28,16 @@ export default function UnauthorizedPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {!loading && role && (
+            <div className="bg-muted p-3 rounded-lg">
+              <p className="text-sm font-medium text-center mb-2">Your current role:</p>
+              <div className="flex justify-center">
+                <Badge variant="secondary" className="text-sm">
+                  {role}
+                </Badge>
+              </div>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground text-center">
             If you believe this is an error, please contact your administrator.
           </p>

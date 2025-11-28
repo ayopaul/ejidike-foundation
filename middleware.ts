@@ -46,7 +46,7 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('role')
       .eq('user_id', session.user.id)
-      .single();
+      .maybeSingle();
 
     let redirectPath = '/dashboard';
     if (profile?.role === 'admin') {
@@ -62,15 +62,25 @@ export async function middleware(request: NextRequest) {
 
   // Role-based route protection
   if (session) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('user_id', session.user.id)
-      .single();
+      .maybeSingle();
+
+    // If profile doesn't exist or error fetching it
+    if (profileError || !profile) {
+      console.error('Profile fetch error in middleware:', profileError);
+      // Redirect to login if profile not found
+      if (!path.startsWith('/login') && !path.startsWith('/register')) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    }
 
     // Admin routes
     if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
       if (profile?.role !== 'admin') {
+        console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
     }
@@ -78,6 +88,7 @@ export async function middleware(request: NextRequest) {
     // Mentor routes
     if (path.startsWith('/mentor') || path.startsWith('/api/mentorship')) {
       if (profile?.role !== 'mentor' && profile?.role !== 'admin') {
+        console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
     }
@@ -85,6 +96,7 @@ export async function middleware(request: NextRequest) {
     // Partner routes
     if (path.startsWith('/partner') || path.startsWith('/api/partners') || path.startsWith('/api/opportunities')) {
       if (profile?.role !== 'partner' && profile?.role !== 'admin') {
+        console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
     }

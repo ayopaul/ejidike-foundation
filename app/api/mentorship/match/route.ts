@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       .eq('mentor_id', mentor_id)
       .eq('mentee_id', mentee_id)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
     if (existingMatch) {
       return NextResponse.json(

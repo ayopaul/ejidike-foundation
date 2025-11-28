@@ -15,8 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Loader2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { Profile } from '@/types/database';
 
 export default function ProfilePage() {
@@ -27,9 +29,9 @@ export default function ProfilePage() {
     full_name: '',
     email: '',
     phone: '',
-    date_of_birth: '',
     location: '',
   });
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -39,9 +41,9 @@ export default function ProfilePage() {
         full_name: userProfile.full_name || '',
         email: userProfile.email || '',
         phone: userProfile.phone || '',
-        date_of_birth: userProfile.date_of_birth || '',
         location: userProfile.location || '',
       });
+      setDateOfBirth(userProfile.date_of_birth ? new Date(userProfile.date_of_birth) : undefined);
     }
   }, [userProfile]);
 
@@ -61,7 +63,10 @@ export default function ProfilePage() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update(formData)
+        .update({
+          ...formData,
+          date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null
+        })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -244,12 +249,10 @@ export default function ProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="date_of_birth">Date of Birth</Label>
-                    <Input
-                      id="date_of_birth"
-                      name="date_of_birth"
-                      type="date"
-                      value={formData.date_of_birth}
-                      onChange={handleChange}
+                    <DatePicker
+                      date={dateOfBirth}
+                      onDateChange={setDateOfBirth}
+                      placeholder="Select your birth date"
                     />
                   </div>
                 </div>

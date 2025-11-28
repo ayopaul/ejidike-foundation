@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Loader2, Upload, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export default function ProfilePage() {
   const { user, profile, refreshProfile } = useUserProfile();
@@ -26,9 +28,9 @@ export default function ProfilePage() {
     full_name: '',
     email: '',
     phone: '',
-    date_of_birth: '',
     location: ''
   });
+  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>();
 
   useEffect(() => {
     if (profile) {
@@ -36,9 +38,9 @@ export default function ProfilePage() {
         full_name: profile.full_name || '',
         email: profile.email || user?.email || '',
         phone: profile.phone || '',
-        date_of_birth: profile.date_of_birth || '',
         location: profile.location || ''
       });
+      setDateOfBirth(profile.date_of_birth ? new Date(profile.date_of_birth) : undefined);
       setAvatarUrl(profile.avatar_url ?? null);
     }
   }, [profile, user]);
@@ -126,9 +128,9 @@ export default function ProfilePage() {
         .update({
           full_name: formData.full_name,
           email: formData.email,
-          phone: formData.phone,
-          date_of_birth: formData.date_of_birth,
-          location: formData.location,
+          phone: formData.phone || null,
+          date_of_birth: dateOfBirth ? format(dateOfBirth, 'yyyy-MM-dd') : null,
+          location: formData.location || null,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
@@ -267,11 +269,10 @@ export default function ProfilePage() {
             {/* Date of Birth */}
             <div className="space-y-2">
               <Label htmlFor="date_of_birth">Date of Birth</Label>
-              <Input
-                id="date_of_birth"
-                type="date"
-                value={formData.date_of_birth}
-                onChange={(e) => handleChange('date_of_birth', e.target.value)}
+              <DatePicker
+                date={dateOfBirth}
+                onDateChange={setDateOfBirth}
+                placeholder="Select your birth date"
               />
             </div>
 

@@ -95,7 +95,7 @@ export default function ProgramDetailPage() {
 
   return (
     <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
+     
         <div className="space-y-6">
           {/* Back Button */}
           <Button variant="ghost" asChild>
@@ -197,7 +197,7 @@ export default function ProgramDetailPage() {
             </CardContent>
           </Card>
         </div>
-      </DashboardLayout>
+      
     </ProtectedRoute>
   );
 }

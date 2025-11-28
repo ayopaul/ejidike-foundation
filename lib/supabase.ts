@@ -1,24 +1,28 @@
 //lib/supabase.ts
 
-import { createClient } from '@supabase/supabase-js';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/types/database';
 
-// Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Singleton instance for client-side Supabase client
+let clientInstance: ReturnType<typeof createClientComponentClient<Database>> | null = null;
 
-// Client-side Supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Client-side Supabase client (singleton pattern)
+export const supabase = (() => {
+  if (!clientInstance) {
+    clientInstance = createClientComponentClient<Database>();
+  }
+  return clientInstance;
+})();
 
-// Client component client (for App Router)
+// Client component client (for App Router) - returns the same singleton
 export const createSupabaseClient = () => {
-  return createClientComponentClient();
+  return supabase;
 };
 
 // Server-side client (for Server Components)
 export const createServerSupabaseClient = () => {
   const { cookies } = require('next/headers');
   const { createServerComponentClient } = require('@supabase/auth-helpers-nextjs');
-  
+
   return createServerComponentClient({ cookies });
 };
