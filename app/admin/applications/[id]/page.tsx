@@ -1,6 +1,6 @@
 /**
- * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/applications/[id]/page.tsx
- * PURPOSE: View details of a specific application
+ * FILE PATH: /ejdk/ejidike-foundation/app/admin/dashboard/applications/[id]/page.tsx
+ * PURPOSE: Admin view of specific application with review controls
  */
 
 'use client';
@@ -11,34 +11,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ArrowLeft, FileText, Calendar, User, Loader2, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatDate, getStatusColor } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import ApplicationReview from '@/components/admin/ApplicationReview';
 
-export default function ApplicationDetailPage() {
+export default function AdminApplicationDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user, profile } = useUserProfile();
   const [application, setApplication] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [applicant, setApplicant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (params.id && profile) {
+    if (params.id) {
       fetchApplication();
       fetchDocuments();
     }
-  }, [params.id, profile]);
+  }, [params.id]);
 
   const fetchApplication = async () => {
     try {
-      console.log('Fetching application with ID:', params.id);
-      console.log('Current profile ID:', profile?.id);
-      console.log('Current user role:', profile?.role);
-
       const { data, error } = await supabase
         .from('applications')
         .select(`
@@ -47,36 +45,23 @@ export default function ApplicationDetailPage() {
             title,
             type,
             budget
+          ),
+          applicant:profiles!applicant_id (
+            full_name,
+            email,
+            phone,
+            avatar_url
           )
         `)
         .eq('id', params.id)
         .single();
 
-      if (error) {
-        console.error('Error fetching application:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        // RLS might be blocking access
-        toast.error('Access denied - You do not have permission to view this application');
-        router.push('/applications');
-        return;
-      }
-
-      console.log('Application data:', data);
-      console.log('Application applicant_id:', data?.applicant_id);
-
-      // Double-check if user has access (applicant or admin)
-      if (data && data.applicant_id !== profile?.id && profile?.role !== 'admin') {
-        toast.error('Access denied');
-        router.push('/applications');
-        return;
-      }
-
+      if (error) throw error;
       setApplication(data);
+      setApplicant(data.applicant);
     } catch (error: any) {
       console.error('Error fetching application:', error);
       toast.error('Failed to load application');
-      router.push('/applications');
     } finally {
       setLoading(false);
     }
@@ -105,7 +90,6 @@ export default function ApplicationDetailPage() {
 
       if (error) throw error;
 
-      // Create download link
       const url = window.URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -124,37 +108,45 @@ export default function ApplicationDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
     );
   }
 
   if (!application) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground mb-4">Application not found</p>
-        <Link href="/applications">
-          <Button variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Applications
-          </Button>
-        </Link>
-      </div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-4">Application not found</p>
+            <Link href="/admin/applications">
+              <Button variant="outline">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Applications
+              </Button>
+            </Link>
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Link href="/applications">
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Link href="/admin/applications">
         <Button variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Applications
         </Button>
       </Link>
 
-      {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-3">
           <Badge variant={getStatusColor(application.status)}>
@@ -167,6 +159,29 @@ export default function ApplicationDetailPage() {
         <h1 className="text-3xl font-bold">{application.programs?.title}</h1>
         <p className="text-muted-foreground mt-2">Application ID: {application.id}</p>
       </div>
+
+      {/* Applicant Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Applicant Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <p className="text-sm font-medium">Name</p>
+            <p className="text-sm text-muted-foreground">{applicant?.full_name}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium">Email</p>
+            <p className="text-sm text-muted-foreground">{applicant?.email}</p>
+          </div>
+          {applicant?.phone && (
+            <div>
+              <p className="text-sm font-medium">Phone</p>
+              <p className="text-sm text-muted-foreground">{applicant.phone}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Timeline */}
       <Card>
@@ -250,7 +265,7 @@ export default function ApplicationDetailPage() {
         </Card>
       )}
 
-      {/* Supporting Documents */}
+      {/* Documents */}
       {documents.length > 0 && (
         <Card>
           <CardHeader>
@@ -290,7 +305,20 @@ export default function ApplicationDetailPage() {
         </Card>
       )}
 
-      {/* Reviewer Notes */}
+      {/* Review Component */}
+      {application.status === 'submitted' && (
+        <ApplicationReview
+          applicationId={application.id}
+          applicantName={applicant?.full_name}
+          programTitle={application.programs?.title}
+          onReviewComplete={() => {
+            fetchApplication();
+            router.push('/admin/applications');
+          }}
+        />
+      )}
+
+      {/* Reviewer Notes (if already reviewed) */}
       {application.reviewer_notes && (
         <Card className={
           application.status === 'approved' ? 'border-green-200 bg-green-50' :
@@ -305,17 +333,8 @@ export default function ApplicationDetailPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Actions */}
-      {application.status === 'draft' && (
-        <Card>
-          <CardContent className="pt-6">
-            <Link href={`/apply/${application.program_id}?draft=${application.id}`}>
-              <Button className="w-full">Continue Application</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

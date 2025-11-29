@@ -12,6 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
@@ -20,7 +23,7 @@ import { toast } from 'sonner';
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -70,7 +73,7 @@ export default function AnnouncementsPage() {
         toast.success('Announcement created');
       }
 
-      setShowForm(false);
+      setDialogOpen(false);
       setEditingId(null);
       setFormData({ title: '', message: '', type: 'info', is_active: true });
       fetchAnnouncements();
@@ -82,7 +85,13 @@ export default function AnnouncementsPage() {
   const handleEdit = (announcement: any) => {
     setFormData(announcement);
     setEditingId(announcement.id);
-    setShowForm(true);
+    setDialogOpen(true);
+  };
+
+  const handleNewAnnouncement = () => {
+    setFormData({ title: '', message: '', type: 'info', is_active: true });
+    setEditingId(null);
+    setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -104,31 +113,39 @@ export default function AnnouncementsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Announcements</h1>
           <p className="text-muted-foreground">Manage site-wide announcements</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Announcement
-        </Button>
-      </div>
-
-      {showForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{editingId ? 'Edit' : 'Create'} Announcement</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={handleNewAnnouncement}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Announcement
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingId ? 'Edit' : 'Create'} Announcement</DialogTitle>
+              <DialogDescription>
+                {editingId ? 'Update the announcement details below.' : 'Add a new site-wide announcement.'}
+              </DialogDescription>
+            </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Title</Label>
@@ -147,16 +164,16 @@ export default function AnnouncementsPage() {
                   required
                 />
               </div>
-              <div className="flex gap-3">
-                <Button type="submit">Save</Button>
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-              </div>
+                <Button type="submit">Save</Button>
+              </DialogFooter>
             </form>
-          </CardContent>
-        </Card>
-      )}
+          </DialogContent>
+        </Dialog>
+      </div>
 
       <div className="space-y-4">
         {announcements.map((announcement) => (
@@ -168,9 +185,52 @@ export default function AnnouncementsPage() {
                   <CardDescription>{formatDate(announcement.created_at)}</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(announcement)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <Dialog open={dialogOpen && editingId === announcement.id} onOpenChange={(open) => {
+                    if (!open) {
+                      setDialogOpen(false);
+                      setEditingId(null);
+                      setFormData({ title: '', message: '', type: 'info', is_active: true });
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" onClick={() => handleEdit(announcement)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Announcement</DialogTitle>
+                        <DialogDescription>
+                          Update the announcement details below.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Title</Label>
+                          <Input
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Message</Label>
+                          <Textarea
+                            value={formData.message}
+                            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                            rows={4}
+                            required
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button type="submit">Save</Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                   <Button size="sm" variant="destructive" onClick={() => handleDelete(announcement.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -183,6 +243,8 @@ export default function AnnouncementsPage() {
           </Card>
         ))}
       </div>
-    </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

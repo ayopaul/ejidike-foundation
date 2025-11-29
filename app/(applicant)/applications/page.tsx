@@ -31,17 +31,17 @@ interface Application {
 }
 
 export default function ApplicationsPage() {
-  const { user } = useUserProfile();
+  const { user, profile } = useUserProfile();
   const supabase = createSupabaseClient();
-  
+
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchApplications();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchApplications = async () => {
     try {
@@ -52,7 +52,7 @@ export default function ApplicationsPage() {
           *,
           program:programs(title, type)
         `)
-        .eq('applicant_id', user?.id)
+        .eq('applicant_id', profile?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

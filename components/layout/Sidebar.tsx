@@ -74,9 +74,12 @@ export function Sidebar({ role }: SidebarProps) {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-background">
       <div className="p-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-lg bg-primary" />
-          <span className="text-xl font-bold">Ejidike</span>
+        <Link href="/" className="flex items-center">
+          <img
+            src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/organization-logos/Ejidike%20foudnation%20logo.png"
+            alt="Ejidike Foundation"
+            className="h-12 w-auto object-contain"
+          />
         </Link>
       </div>
       

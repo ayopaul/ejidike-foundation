@@ -22,7 +22,7 @@ export default function ApplyPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUserProfile();
+  const { user, profile } = useUserProfile();
   const draftId = searchParams.get('draft');
 
   const [program, setProgram] = useState<any>(null);
@@ -39,20 +39,20 @@ export default function ApplyPage() {
   });
 
   useEffect(() => {
-    if (params.programId) {
+    if (params.id) {
       fetchProgram();
       if (draftId) {
         loadDraft();
       }
     }
-  }, [params.programId, draftId]);
+  }, [params.id, draftId]);
 
   const fetchProgram = async () => {
     try {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
-        .eq('id', params.programId)
+        .eq('id', params.id)
         .single();
 
       if (error) throw error;
@@ -89,7 +89,7 @@ export default function ApplyPage() {
   };
 
   const handleSaveDraft = async () => {
-    if (!user) {
+    if (!profile) {
       toast.error('You must be logged in');
       return;
     }
@@ -113,8 +113,8 @@ export default function ApplyPage() {
         const { data, error } = await supabase
           .from('applications')
           .insert({
-            program_id: params.programId,
-            applicant_id: user.id,
+            program_id: params.id,
+            applicant_id: profile.id,
             status: 'draft',
             application_data: formData
           })
@@ -150,7 +150,7 @@ export default function ApplyPage() {
       return;
     }
 
-    if (!user) {
+    if (!profile) {
       toast.error('You must be logged in');
       return;
     }
@@ -177,8 +177,8 @@ export default function ApplyPage() {
         const { data, error } = await supabase
           .from('applications')
           .insert({
-            program_id: params.programId,
-            applicant_id: user.id,
+            program_id: params.id,
+            applicant_id: profile.id,
             status: 'submitted',
             application_data: formData,
             submitted_at: new Date().toISOString()
@@ -238,7 +238,7 @@ export default function ApplyPage() {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Back Button */}
-      <Link href={`/programs/${params.programId}`}>
+      <Link href={`/programs/${params.id}`}>
         <Button variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Program

@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Building2, Loader2, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
@@ -29,21 +31,24 @@ export default function AdminPartnersPage() {
   const fetchPartners = async () => {
     try {
       const { data, error } = await supabase
-        .from('partner_organizations')
+        .from('profiles')
         .select(`
           *,
-          profile:profiles!user_id (
-            full_name,
-            email
+          partner_organizations!user_id (
+            *
           )
         `)
-        .order('created_at', { ascending: false });
+        .eq('role', 'partner')
+        .order('created_at', { ascending: false});
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching partners:', error);
+        toast.error(`Failed to load partners: ${error.message}`);
+        throw error;
+      }
       setPartners(data || []);
     } catch (error: any) {
       console.error('Error fetching partners:', error);
-      toast.error('Failed to load partners');
     } finally {
       setLoading(false);
     }
@@ -51,58 +56,73 @@ export default function AdminPartnersPage() {
 
   const filterPartners = (status?: string) => {
     if (!status || status === 'all') return partners;
-    return partners.filter(p => p.verification_status === status);
+    const orgData = partners.filter(p => p.partner_organizations && p.partner_organizations.length > 0);
+    return orgData.filter(p => p.partner_organizations[0]?.verification_status === status);
   };
 
-  const PartnerCard = ({ partner }: { partner: any }) => (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={partner.logo_url} />
-            <AvatarFallback>
-              <Building2 className="h-8 w-8" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <CardTitle>{partner.organization_name}</CardTitle>
-            <CardDescription className="mt-2">
-              Contact: {partner.profile?.full_name}
-            </CardDescription>
-            <p className="text-xs text-muted-foreground mt-1">
-              Joined {formatDate(partner.created_at)}
-            </p>
+  const PartnerCard = ({ partner }: { partner: any }) => {
+    const org = partner.partner_organizations?.[0];
+    const status = org?.verification_status || 'pending';
+
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-start gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={org?.logo_url || partner.avatar_url} />
+              <AvatarFallback>
+                <Building2 className="h-8 w-8" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <CardTitle>{org?.organization_name || partner.full_name}</CardTitle>
+              <CardDescription className="mt-2">
+                Contact: {partner.full_name}
+              </CardDescription>
+              <p className="text-sm text-muted-foreground mt-1">
+                {partner.email}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Joined {formatDate(partner.created_at)}
+              </p>
+            </div>
+            <Badge variant={
+              status === 'verified' ? 'default' :
+              status === 'rejected' ? 'destructive' :
+              'secondary'
+            }>
+              {status}
+            </Badge>
           </div>
-          <Badge variant={
-            partner.verification_status === 'verified' ? 'default' :
-            partner.verification_status === 'rejected' ? 'destructive' :
-            'secondary'
-          }>
-            {partner.verification_status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Link href={`/admin/partners/${partner.user_id}`}>
-          <Button variant="outline" className="w-full">
-            <Eye className="h-4 w-4 mr-2" />
-            View Details
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
+        </CardHeader>
+        <CardContent>
+          <Link href={`/admin/partners/${partner.id}`}>
+            <Button variant="outline" className="w-full">
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Partner Organizations</h1>
         <p className="text-muted-foreground">Manage partner organizations and verify new applications</p>
@@ -112,13 +132,13 @@ export default function AdminPartnersPage() {
         <TabsList>
           <TabsTrigger value="all">All ({partners.length})</TabsTrigger>
           <TabsTrigger value="verified">
-            Verified ({partners.filter(p => p.verification_status === 'verified').length})
+            Verified ({partners.filter(p => p.partner_organizations?.[0]?.verification_status === 'verified').length})
           </TabsTrigger>
           <TabsTrigger value="pending">
-            Pending ({partners.filter(p => p.verification_status === 'pending').length})
+            Pending ({partners.filter(p => !p.partner_organizations || p.partner_organizations.length === 0 || p.partner_organizations[0]?.verification_status === 'pending').length})
           </TabsTrigger>
           <TabsTrigger value="rejected">
-            Rejected ({partners.filter(p => p.verification_status === 'rejected').length})
+            Rejected ({partners.filter(p => p.partner_organizations?.[0]?.verification_status === 'rejected').length})
           </TabsTrigger>
         </TabsList>
 
@@ -133,12 +153,14 @@ export default function AdminPartnersPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {filterPartners(activeTab === 'all' ? undefined : activeTab).map((partner) => (
-                <PartnerCard key={partner.user_id} partner={partner} />
+                <PartnerCard key={partner.id} partner={partner} />
               ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
-    </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

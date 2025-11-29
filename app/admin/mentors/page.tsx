@@ -7,6 +7,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Users, CheckCircle, Calendar, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,7 +38,9 @@ export default function AdminMentorsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Mentor Management</h1>
         <p className="text-muted-foreground">Manage mentors, matches, and sessions</p>
@@ -63,6 +67,8 @@ export default function AdminMentorsPage() {
           );
         })}
       </div>
-    </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

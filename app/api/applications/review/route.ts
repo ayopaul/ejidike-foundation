@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update application
-    const { data, error } = await supabase
+    const { data: updatedApp, error } = await supabase
       .from('applications')
       .update({
         status,
@@ -67,17 +67,7 @@ export async function POST(request: NextRequest) {
         reviewer_notes
       })
       .eq('id', application_id)
-      .select(`
-        *,
-        programs (
-          title,
-          type
-        ),
-        applicant:profiles!applications_applicant_id_fkey (
-          full_name,
-          email
-        )
-      `)
+      .select()
       .single();
 
     if (error) {
@@ -87,9 +77,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Fetch related data separately
+    const { data: program } = await supabase
+      .from('programs')
+      .select('title, type')
+      .eq('id', updatedApp.program_id)
+      .single();
+
+    const { data: applicant } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', updatedApp.applicant_id)
+      .single();
+
+    const enrichedData = {
+      ...updatedApp,
+      programs: program,
+      applicant
+    };
+
     return NextResponse.json({
       success: true,
-      data
+      data: enrichedData
     });
   } catch (error: any) {
     console.error('Review application error:', error);

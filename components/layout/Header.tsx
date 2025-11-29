@@ -66,10 +66,25 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className="max-h-[300px] overflow-y-auto">
+                {/* Placeholder notifications */}
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No new notifications
+                </div>
+                {/* You can add actual notifications here later */}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User Menu */}
           <DropdownMenu>

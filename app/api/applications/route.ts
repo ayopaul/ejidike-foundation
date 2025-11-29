@@ -29,20 +29,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const programId = searchParams.get('program_id');
 
+    // Fetch applications without foreign key hints
     let query = supabase
       .from('applications')
-      .select(`
-        *,
-        programs (
-          title,
-          type,
-          budget
-        ),
-        applicant:profiles!applications_applicant_id_fkey (
-          full_name,
-          email
-        )
-      `);
+      .select('*');
 
     // Get user profile to check role
     const { data: profile } = await supabase
@@ -76,7 +66,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ data });
+    // Enrich applications with related data
+    const enrichedData = await Promise.all(
+      (data || []).map(async (app) => {
+        // Fetch program data
+        const { data: program } = await supabase
+          .from('programs')
+          .select('title, type, budget')
+          .eq('id', app.program_id)
+          .single();
+
+        // Fetch applicant data
+        const { data: applicant } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', app.applicant_id)
+          .single();
+
+        return {
+          ...app,
+          programs: program,
+          applicant
+        };
+      })
+    );
+
+    return NextResponse.json({ data: enrichedData });
   } catch (error: any) {
     console.error('GET applications error:', error);
     return NextResponse.json(

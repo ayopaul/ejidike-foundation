@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,12 +53,17 @@ export default function PartnerDashboard() {
 
       setOrganization(org);
 
-      // Fetch opportunities
-      const { data: opps } = await supabase
-        .from('partner_opportunities')
-        .select('*')
-        .eq('partner_id', user?.id)
-        .order('created_at', { ascending: false });
+      // Fetch opportunities (only if organization exists)
+      let opps: any[] = [];
+      if (org) {
+        const { data: opportunitiesData } = await supabase
+          .from('partner_opportunities')
+          .select('*')
+          .eq('partner_id', org.id)
+          .order('created_at', { ascending: false });
+
+        opps = opportunitiesData || [];
+      }
 
       setOpportunities(opps || []);
 
@@ -92,9 +95,7 @@ export default function PartnerDashboard() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={['partner']}>
-      <DashboardLayout>
-        <div className="space-y-6">
+    <div className="space-y-6">
           {/* Welcome Section */}
           <div>
             <h2 className="text-3xl font-bold tracking-tight">
@@ -396,8 +397,6 @@ export default function PartnerDashboard() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </DashboardLayout>
-    </ProtectedRoute>
+    </div>
   );
 }

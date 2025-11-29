@@ -7,6 +7,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { FileText, HelpCircle, Scale, Bell } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,33 +38,37 @@ export default function AdminContentPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Content Management</h1>
-        <p className="text-muted-foreground">Manage site content and information</p>
-      </div>
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Content Management</h1>
+            <p className="text-muted-foreground">Manage site content and information</p>
+          </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {contentSections.map((section) => {
-          const Icon = section.icon;
-          return (
-            <Link key={section.href} href={section.href}>
-              <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <Icon className={`h-8 w-8 ${section.color} mb-2`} />
-                  <CardTitle>{section.title}</CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" className="w-full">
-                    Manage
-                  </Button>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {contentSections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <Link key={section.href} href={section.href}>
+                  <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                    <CardHeader>
+                      <Icon className={`h-8 w-8 ${section.color} mb-2`} />
+                      <CardTitle>{section.title}</CardTitle>
+                      <CardDescription>{section.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button variant="outline" className="w-full">
+                        Manage
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

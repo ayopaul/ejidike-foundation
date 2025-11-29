@@ -82,30 +82,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create profile using admin client (bypasses RLS)
-    const { error: profileError } = await supabaseAdmin
+    // Create or update profile using admin client (bypasses RLS)
+    // Use upsert in case a database trigger already created the profile
+    console.log('Attempting to create/update profile for user:', authData.user.id);
+    console.log('Profile data:', { user_id: authData.user.id, email, full_name, role });
+
+    const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
+      .upsert({
         user_id: authData.user.id,
         email,
         full_name,
         role
-      });
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
-      
+      console.error('========== PROFILE CREATION ERROR ==========');
+      console.error('Error code:', profileError.code);
+      console.error('Error message:', profileError.message);
+      console.error('Error details:', profileError.details);
+      console.error('Error hint:', profileError.hint);
+      console.error('Full error:', JSON.stringify(profileError, null, 2));
+      console.error('===========================================');
+
       // If profile creation fails, delete the auth user
+      console.log('Deleting auth user due to profile creation failure...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-      
+
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to create user profile',
-          details: profileError.message 
+          details: profileError.message,
+          code: profileError.code,
+          hint: profileError.hint
         },
         { status: 500 }
       );
     }
+
+    console.log('Profile created successfully:', profileData);
 
     return NextResponse.json({
       success: true,

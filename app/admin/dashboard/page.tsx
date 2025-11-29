@@ -110,7 +110,7 @@ export default function AdminDashboard() {
       const { count: activePrograms } = await supabase
         .from('programs')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'open');
+        .eq('status', 'active');
 
       // Fetch funding stats - FIXED
       const { data: programsData } = await supabase
@@ -152,17 +152,36 @@ export default function AdminDashboard() {
       });
 
       // Fetch recent applications
-      const { data: recentApps } = await supabase
+      const { data: recentAppsData } = await supabase
         .from('applications')
-        .select(`
-          *,
-          applicant:profiles!applications_applicant_id_fkey(full_name, email),
-          program:programs(title)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(5);
 
-      setRecentApplications(recentApps || []);
+      // Enrich with related data
+      const enrichedRecentApps = await Promise.all(
+        (recentAppsData || []).map(async (app) => {
+          const { data: applicant } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', app.applicant_id)
+            .single();
+
+          const { data: program } = await supabase
+            .from('programs')
+            .select('title')
+            .eq('id', app.program_id)
+            .single();
+
+          return {
+            ...app,
+            applicant,
+            program
+          };
+        })
+      );
+
+      setRecentApplications(enrichedRecentApps || []);
 
       // Fetch recent users
       const { data: recentUsersList } = await supabase
@@ -433,7 +452,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-4">
               <Button asChild variant="outline" className="h-auto py-4">
-                <Link href="/admin/applications" className="flex flex-col items-center gap-2">
+                <Link href="/admin/dashboard/applications" className="flex flex-col items-center gap-2">
                   <FileText className="h-6 w-6" />
                   <span>Review Applications</span>
                 </Link>

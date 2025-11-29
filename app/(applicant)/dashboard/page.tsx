@@ -39,10 +39,10 @@ export default function ApplicantDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchDashboardData();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchDashboardData = async () => {
     try {
@@ -55,7 +55,7 @@ export default function ApplicantDashboard() {
           *,
           program:programs(*)
         `)
-        .eq('applicant_id', user?.id)
+        .eq('applicant_id', profile?.id)
         .order('created_at', { ascending: false });
 
       setApplications(apps || []);
@@ -83,7 +83,7 @@ export default function ApplicantDashboard() {
       const { data: mentorship, error: mentorshipError } = await supabase
         .from('mentorship_matches')
         .select('*')
-        .eq('mentee_id', user?.id)
+        .eq('mentee_id', profile?.id)
         .eq('status', 'active')
         .maybeSingle();
 
@@ -141,67 +141,75 @@ export default function ApplicantDashboard() {
 
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Applications
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalApplications}</div>
-                <p className="text-xs text-muted-foreground">
-                  All time submissions
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/applications">
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Applications
+                  </CardTitle>
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalApplications}</div>
+                  <p className="text-xs text-muted-foreground">
+                    All time submissions
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Pending Review
-                </CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingApplications}</div>
-                <p className="text-xs text-muted-foreground">
-                  Awaiting decision
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/applications">
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Pending Review
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.pendingApplications}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Awaiting decision
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Approved
-                </CardTitle>
-                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.approvedApplications}</div>
-                <p className="text-xs text-muted-foreground">
-                  Successful applications
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/applications">
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Approved
+                  </CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.approvedApplications}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Successful applications
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Mentorship
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {mentorshipStatus ? '1' : '0'}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {mentorshipStatus ? 'Active mentor' : 'No mentor yet'}
-                </p>
-              </CardContent>
-            </Card>
+            <Link href="/mentorship">
+              <Card className="cursor-pointer hover:border-primary transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Mentorship
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {mentorshipStatus ? '1' : '0'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {mentorshipStatus ? 'Active mentor' : 'No mentor yet'}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
 
           {/* Mentorship Status Banner */}

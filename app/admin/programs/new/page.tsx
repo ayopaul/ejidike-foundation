@@ -46,6 +46,7 @@ export default function NewProgramPage() {
     setSaving(true);
 
     try {
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from('programs')
         .insert({
@@ -55,7 +56,9 @@ export default function NewProgramPage() {
           budget: parseFloat(formData.budget),
           start_date: formData.start_date,
           end_date: formData.end_date,
-          status: formData.status
+          status: formData.status,
+          created_at: now,
+          updated_at: now
         });
 
       if (error) throw error;

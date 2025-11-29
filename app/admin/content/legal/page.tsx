@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Loader2, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -73,14 +75,20 @@ export default function LegalPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <ProtectedRoute allowedRoles={['admin']}>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </DashboardLayout>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Legal Documents</h1>
         <p className="text-muted-foreground">Manage privacy policy, terms, and other legal content</p>
@@ -174,6 +182,8 @@ export default function LegalPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

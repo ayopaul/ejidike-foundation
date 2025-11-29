@@ -16,35 +16,48 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 
 export default function MentorshipPage() {
-  const { user } = useUserProfile();
+  const { user, profile } = useUserProfile();
   const [mentorMatch, setMentorMatch] = useState<any>(null);
   const [availableMentors, setAvailableMentors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchMentorMatch();
       fetchAvailableMentors();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchMentorMatch = async () => {
     try {
-      const { data, error } = await supabase
+      // First get the mentorship match
+      const { data: match, error: matchError } = await supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentor:mentor_profiles(
-            *,
-            profiles(full_name, avatar_url)
-          )
-        `)
-        .eq('mentee_id', user?.id)
-        .eq('status', 'active')
+        .select('*')
+        .eq('mentee_id', profile?.id)
+        .in('status', ['active', 'pending'])
         .maybeSingle();
 
-      if (error) throw error;
-      setMentorMatch(data);
+      if (matchError) throw matchError;
+
+      if (match) {
+        // Then get the mentor's profile and mentor_profile details
+        const { data: mentorProfile } = await supabase
+          .from('profiles')
+          .select(`
+            *,
+            mentor_profiles(*)
+          `)
+          .eq('id', match.mentor_id)
+          .single();
+
+        setMentorMatch({
+          ...match,
+          mentor: mentorProfile
+        });
+      } else {
+        setMentorMatch(null);
+      }
     } catch (error: any) {
       console.error('Error fetching mentor match:', error);
     }
@@ -52,12 +65,20 @@ export default function MentorshipPage() {
 
   const fetchAvailableMentors = async () => {
     try {
+      // Get approved mentor profiles
+      // Use explicit FK name to avoid ambiguity (mentor_profiles has 2 FKs to profiles table)
       const { data, error } = await supabase
         .from('mentor_profiles')
         .select(`
-          *,
-          profiles(full_name, avatar_url)
+          user_id,
+          bio,
+          expertise_areas,
+          years_of_experience,
+          linkedin_url,
+          availability_status,
+          profiles!mentor_profiles_user_id_fkey(id, full_name, avatar_url, email)
         `)
+        .eq('status', 'approved')
         .eq('availability_status', 'available')
         .limit(6);
 
@@ -70,17 +91,17 @@ export default function MentorshipPage() {
     }
   };
 
-  const requestMentor = async (mentorId: string) => {
-    if (!user) return;
+  const requestMentor = async (mentorProfileId: string) => {
+    if (!profile) return;
 
     try {
       const { error } = await supabase
         .from('mentorship_matches')
         .insert({
-          mentor_id: mentorId,
-          mentee_id: user.id,
+          mentor_id: mentorProfileId,
+          mentee_id: profile.id,
           status: 'pending',
-          matched_at: new Date().toISOString()
+          start_date: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -128,17 +149,17 @@ export default function MentorshipPage() {
           <CardContent>
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={mentorMatch.mentor?.profiles?.avatar_url} />
+                <AvatarImage src={mentorMatch.mentor?.avatar_url} />
                 <AvatarFallback>
-                  {mentorMatch.mentor?.profiles?.full_name?.[0] || 'M'}
+                  {mentorMatch.mentor?.full_name?.[0] || 'M'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg">
-                  {mentorMatch.mentor?.profiles?.full_name || 'Mentor'}
+                  {mentorMatch.mentor?.full_name || 'Mentor'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {mentorMatch.mentor?.expertise || 'Expert Mentor'}
+                  {mentorMatch.mentor?.mentor_profiles?.[0]?.expertise_areas?.join(', ') || 'Expert Mentor'}
                 </p>
                 <Badge variant={mentorMatch.status === 'active' ? 'default' : 'secondary'} className="mt-2">
                   {mentorMatch.status}
@@ -178,7 +199,7 @@ export default function MentorshipPage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {availableMentors.map((mentor) => (
-                <Card key={mentor.id}>
+                <Card key={mentor.profiles?.id}>
                   <CardHeader>
                     <div className="flex items-center gap-3">
                       <Avatar>
@@ -192,7 +213,7 @@ export default function MentorshipPage() {
                           {mentor.profiles?.full_name || 'Mentor'}
                         </CardTitle>
                         <CardDescription className="text-xs">
-                          {mentor.expertise}
+                          {mentor.expertise_areas?.join(', ') || 'Mentor'}
                         </CardDescription>
                       </div>
                     </div>
@@ -201,10 +222,10 @@ export default function MentorshipPage() {
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
                       {mentor.bio || 'Experienced professional ready to guide and support mentees.'}
                     </p>
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       size="sm"
-                      onClick={() => requestMentor(mentor.user_id)}
+                      onClick={() => requestMentor(mentor.profiles?.id)}
                     >
                       Request Mentor
                     </Button>

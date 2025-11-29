@@ -36,7 +36,7 @@ export default function AdminUserDetailPage() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', params.id)
+        .eq('id', params.id)
         .single();
 
       if (error) throw error;

@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
     '/',
     '/login',
     '/register',
-    '/auth/callback',
+    '/api/auth/callback',
     '/api/auth/login',
     '/api/auth/register',
     '/api/auth/reset-password',
@@ -42,11 +42,15 @@ export async function middleware(request: NextRequest) {
   // If logged in and trying to access auth pages, redirect to appropriate dashboard
   if (session && (path === '/login' || path === '/register')) {
     // Get user profile to determine role
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('user_id', session.user.id)
       .maybeSingle();
+
+    if (profileError) {
+      console.error('Error fetching profile for redirect:', profileError);
+    }
 
     let redirectPath = '/dashboard';
     if (profile?.role === 'admin') {
@@ -68,25 +72,36 @@ export async function middleware(request: NextRequest) {
       .eq('user_id', session.user.id)
       .maybeSingle();
 
+    // Debug logging
+    if (profileError || !profile) {
+      console.error('Profile fetch error in middleware:', {
+        error: profileError,
+        userId: session.user.id,
+        profileData: profile,
+        path: path
+      });
+    }
+
     // If profile doesn't exist or error fetching it
     if (profileError || !profile) {
-      console.error('Profile fetch error in middleware:', profileError);
-      // Redirect to login if profile not found
-      if (!path.startsWith('/login') && !path.startsWith('/register')) {
-        return NextResponse.redirect(new URL('/login', request.url));
+      // Don't redirect if already on auth pages or callback
+      if (!path.startsWith('/login') && !path.startsWith('/register') && !path.startsWith('/api/auth')) {
+        console.log('Redirecting to login due to missing profile');
+        return NextResponse.redirect(new URL('/login?error=no_profile', request.url));
       }
     }
 
     // Admin routes
-    if (path.startsWith('/admin') || path.startsWith('/api/admin')) {
+    if (path.startsWith('/admin/') || path === '/admin' || path.startsWith('/api/admin')) {
       if (profile?.role !== 'admin') {
         console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
     }
 
-    // Mentor routes
-    if (path.startsWith('/mentor') || path.startsWith('/api/mentorship')) {
+    // Mentor routes (use /mentor/ with trailing slash to avoid matching /mentorship)
+    // Note: /api/mentorship routes are accessible by applicants and mentors
+    if (path.startsWith('/mentor/') || path === '/mentor') {
       if (profile?.role !== 'mentor' && profile?.role !== 'admin') {
         console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
@@ -94,7 +109,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Partner routes
-    if (path.startsWith('/partner') || path.startsWith('/api/partners') || path.startsWith('/api/opportunities')) {
+    if (path.startsWith('/partner/') || path === '/partner' || path.startsWith('/api/partners') || path.startsWith('/api/opportunities')) {
       if (profile?.role !== 'partner' && profile?.role !== 'admin') {
         console.log(`Access denied to ${path} for user with role: ${profile?.role}`);
         return NextResponse.redirect(new URL('/unauthorized', request.url));
