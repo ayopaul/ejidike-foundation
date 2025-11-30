@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +14,14 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
+  BookOpen,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
-import { MentorProfile, MentorshipMatch, MentorshipSession } from '@/types/database';
+import { MentorProfile } from '@/types/database';
 
 export default function MentorDashboard() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const supabase = createSupabaseClient();
   
   const [mentorProfile, setMentorProfile] = useState<MentorProfile | null>(null);
@@ -33,66 +33,97 @@ export default function MentorDashboard() {
     totalSessions: 0,
     totalHours: 0,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchMentorData();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchMentorData = async () => {
     try {
-      setLoading(true);
 
       // Fetch mentor profile
-      const { data: profile } = await supabase
+      const { data: mentorProfileData } = await supabase
         .from('mentor_profiles')
         .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', profile?.id)
+        .maybeSingle();
 
-      setMentorProfile(profile);
+      setMentorProfile(mentorProfileData);
 
       // Fetch active mentees
       const { data: matches } = await supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentee:profiles!mentorship_matches_mentee_id_fkey(*)
-        `)
-        .eq('mentor_id', user?.id)
+        .select('*')
+        .eq('mentor_id', profile?.id)
         .eq('status', 'active');
 
-      setActiveMentees(matches || []);
+      // If we have matches, fetch mentee profiles separately
+      if (matches && matches.length > 0) {
+        const menteeIds = matches.map(m => m.mentee_id);
+        const { data: mentees } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', menteeIds);
+
+        // Combine matches with mentee data
+        const menteesMap = new Map(mentees?.map(m => [m.id, m]) || []);
+        const matchesWithMentees = matches.map(match => ({
+          ...match,
+          mentee: menteesMap.get(match.mentee_id)
+        }));
+        setActiveMentees(matchesWithMentees);
+      } else {
+        setActiveMentees([]);
+      }
 
       // Fetch upcoming sessions
       const today = new Date().toISOString();
       const { data: sessions } = await supabase
         .from('mentorship_sessions')
-        .select(`
-          *,
-          match:mentorship_matches(
-            id,
-            mentee_id,
-            profiles!mentorship_matches_mentee_id_fkey(
-              id,
-              full_name,
-              email
-            )
-          )
-        `)
+        .select('*')
         .gte('session_date', today)
         .order('session_date', { ascending: true })
         .limit(5);
 
-      setUpcomingSessions(sessions || []);
+      // If we have sessions, fetch match and mentee info separately
+      if (sessions && sessions.length > 0) {
+        const matchIds = sessions.map(s => s.match_id);
+        const { data: matchData } = await supabase
+          .from('mentorship_matches')
+          .select('id, mentee_id')
+          .in('id', matchIds);
+
+        if (matchData && matchData.length > 0) {
+          const menteeIds = matchData.map(m => m.mentee_id);
+          const { data: menteeData } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', menteeIds);
+
+          // Create maps
+          const menteeMap = new Map(menteeData?.map(m => [m.id, m]) || []);
+          const matchMap = new Map(matchData.map(m => [m.id, { ...m, profiles: menteeMap.get(m.mentee_id) }]) || []);
+
+          // Combine sessions with match and mentee data
+          const sessionsWithData = sessions.map(session => ({
+            ...session,
+            match: matchMap.get(session.match_id)
+          }));
+          setUpcomingSessions(sessionsWithData);
+        } else {
+          setUpcomingSessions(sessions);
+        }
+      } else {
+        setUpcomingSessions([]);
+      }
 
       // Calculate stats
       const { data: allMatches } = await supabase
         .from('mentorship_matches')
         .select('*')
-        .eq('mentor_id', user?.id);
+        .eq('mentor_id', profile?.id);
 
       const matchIds = allMatches?.map(m => m.id) || [];
 
@@ -112,22 +143,18 @@ export default function MentorDashboard() {
 
     } catch (error) {
       console.error('Error fetching mentor data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <ProtectedRoute allowedRoles={['mentor']}>
-      <DashboardLayout>
-        <div className="space-y-6">
-          {/* Welcome Section */}
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Welcome back!</h2>
-            <p className="text-muted-foreground">
-              Here's an overview of your mentorship activities
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Welcome back!</h2>
+        <p className="text-muted-foreground">
+          Here's an overview of your mentorship activities
+        </p>
+      </div>
 
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -295,7 +322,14 @@ export default function MentorDashboard() {
                               <div>
                                 <p className="font-medium">{menteeName}</p>
                                 <p className="text-sm text-muted-foreground">
-                                  {new Date(session.session_date).toLocaleString()} • {session.duration_minutes} min • {session.mode}
+                                  {new Date(session.session_date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })} at {new Date(session.session_date).toLocaleTimeString('en-US', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })} • {session.duration_minutes} min
                                 </p>
                               </div>
                             </div>
@@ -318,26 +352,24 @@ export default function MentorDashboard() {
             <CardContent className="grid gap-4 md:grid-cols-3">
               <Button asChild variant="outline" className="h-auto py-4">
                 <Link href="/mentor/sessions/log" className="flex flex-col items-center gap-2">
-                  <Plus className="h-6 w-6" />
+                  <Calendar className="h-6 w-6" />
                   <span>Log New Session</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-auto py-4">
                 <Link href="/mentor/profile" className="flex flex-col items-center gap-2">
-                  <Users className="h-6 w-6" />
+                  <Settings className="h-6 w-6" />
                   <span>Update Profile</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-auto py-4">
                 <Link href="/mentor/resources" className="flex flex-col items-center gap-2">
-                  <TrendingUp className="h-6 w-6" />
+                  <BookOpen className="h-6 w-6" />
                   <span>View Resources</span>
                 </Link>
               </Button>
             </CardContent>
           </Card>
         </div>
-      </DashboardLayout>
-    </ProtectedRoute>
   );
 }

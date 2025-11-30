@@ -19,6 +19,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Calendar,
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate, getStatusColor } from '@/lib/utils';
@@ -30,6 +31,7 @@ export default function ApplicantDashboard() {
   const [applications, setApplications] = useState<any[]>([]);
   const [openPrograms, setOpenPrograms] = useState<any[]>([]);
   const [mentorshipStatus, setMentorshipStatus] = useState<any>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalApplications: 0,
     pendingApplications: 0,
@@ -73,7 +75,7 @@ export default function ApplicantDashboard() {
       const { data: programs } = await supabase
         .from('programs')
         .select('*')
-        .eq('status', 'open')
+        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(3);
 
@@ -91,7 +93,7 @@ export default function ApplicantDashboard() {
         console.error('Error fetching mentorship:', mentorshipError);
       }
 
-      // If match exists, fetch mentor profile separately
+      // If match exists, fetch mentor profile and sessions
       if (mentorship) {
         const { data: mentorProfile } = await supabase
           .from('profiles')
@@ -100,8 +102,18 @@ export default function ApplicantDashboard() {
           .single();
 
         setMentorshipStatus({ ...mentorship, mentor: mentorProfile });
+
+        // Fetch sessions for this mentorship
+        const { data: sessionsData } = await supabase
+          .from('mentorship_sessions')
+          .select('*')
+          .eq('match_id', mentorship.id)
+          .order('session_date', { ascending: false });
+
+        setSessions(sessionsData || []);
       } else {
         setMentorshipStatus(null);
+        setSessions([]);
       }
 
     } catch (error) {
@@ -244,6 +256,7 @@ export default function ApplicantDashboard() {
             <TabsList>
               <TabsTrigger value="applications">My Applications</TabsTrigger>
               <TabsTrigger value="programs">Open Programs</TabsTrigger>
+              {mentorshipStatus && <TabsTrigger value="sessions">Mentorship Sessions</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="applications" className="space-y-4">
@@ -357,6 +370,85 @@ export default function ApplicantDashboard() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="sessions" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Mentorship Sessions</CardTitle>
+                      <CardDescription>
+                        Sessions with {mentorshipStatus?.mentor?.full_name}
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">
+                        {Math.round((sessions.reduce((acc, s) => acc + (s.duration_minutes || 0), 0)) / 60)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Total Hours</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {sessions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No sessions logged yet</p>
+                      <p className="text-sm mt-2">Your mentor will log sessions after each meeting</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {sessions.map((session) => (
+                        <div
+                          key={session.id}
+                          className="p-4 border rounded-lg"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Calendar className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium">
+                                    {new Date(session.session_date).toLocaleDateString('en-US', {
+                                      weekday: 'long',
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </h4>
+                                </div>
+                                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>
+                                      {new Date(session.session_date).toLocaleTimeString('en-US', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })} • {session.duration_minutes} min
+                                    </span>
+                                  </div>
+                                  <Badge variant="outline">{session.mode}</Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {session.notes && (
+                            <div className="ml-13 p-3 bg-muted/50 rounded-md">
+                              <p className="text-sm font-medium mb-1">Session Notes:</p>
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {session.notes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
 
           {/* Quick Actions */}
@@ -378,9 +470,9 @@ export default function ApplicantDashboard() {
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-auto py-4">
-                <Link href="/internships" className="flex flex-col items-center gap-2">
+                <Link href="/opportunities" className="flex flex-col items-center gap-2">
                   <Briefcase className="h-6 w-6" />
-                  <span>View Internships</span>
+                  <span>View Opportunities</span>
                 </Link>
               </Button>
               <Button asChild variant="outline" className="h-auto py-4">

@@ -26,10 +26,12 @@ export default function EditOpportunityPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    opportunity_type: 'internship',
+    type: 'internship',
     location: '',
-    duration: '',
-    deadline: '',
+    remote_option: false,
+    application_deadline: '',
+    application_link: '',
+    requirements: '',
     status: 'open'
   });
 
@@ -51,10 +53,12 @@ export default function EditOpportunityPage() {
       setFormData({
         title: data.title,
         description: data.description || '',
-        opportunity_type: data.opportunity_type,
+        type: data.type,
         location: data.location || '',
-        duration: data.duration || '',
-        deadline: data.deadline?.split('T')[0] || '',
+        remote_option: data.remote_option || false,
+        application_deadline: data.application_deadline?.split('T')[0] || '',
+        application_link: data.application_link || '',
+        requirements: data.requirements ? data.requirements.join(', ') : '',
         status: data.status
       });
     } catch (error: any) {
@@ -75,10 +79,14 @@ export default function EditOpportunityPage() {
         .update({
           title: formData.title,
           description: formData.description,
-          opportunity_type: formData.opportunity_type,
+          type: formData.type,
           location: formData.location,
-          duration: formData.duration,
-          deadline: formData.deadline,
+          remote_option: formData.remote_option,
+          application_deadline: formData.application_deadline,
+          application_link: formData.application_link || null,
+          requirements: formData.requirements
+            ? formData.requirements.split(',').map(r => r.trim()).filter(r => r)
+            : [],
           status: formData.status,
           updated_at: new Date().toISOString()
         })
@@ -164,9 +172,9 @@ export default function EditOpportunityPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="type">Type *</Label>
-                <Select 
-                  value={formData.opportunity_type} 
-                  onValueChange={(val) => setFormData({ ...formData, opportunity_type: val })}
+                <Select
+                  value={formData.type}
+                  onValueChange={(val) => setFormData({ ...formData, type: val })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -192,30 +200,65 @@ export default function EditOpportunityPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Input
-                  id="duration"
-                  placeholder="3 months"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                />
+                <Label htmlFor="remote">Remote Option</Label>
+                <Select
+                  value={formData.remote_option ? 'yes' : 'no'}
+                  onValueChange={(val) => setFormData({ ...formData, remote_option: val === 'yes' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes - Remote/Hybrid Available</SelectItem>
+                    <SelectItem value="no">No - On-site Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="deadline">Application Deadline</Label>
+                <Label htmlFor="deadline">Application Deadline *</Label>
                 <Input
                   id="deadline"
                   type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  value={formData.application_deadline}
+                  onChange={(e) => setFormData({ ...formData, application_deadline: e.target.value })}
+                  required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="application_link">Application Link (Optional)</Label>
+              <Input
+                id="application_link"
+                type="url"
+                placeholder="https://example.com/apply"
+                value={formData.application_link}
+                onChange={(e) => setFormData({ ...formData, application_link: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                External application URL (if not using the platform's built-in application system)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="requirements">Requirements (comma-separated)</Label>
+              <Textarea
+                id="requirements"
+                placeholder="e.g., Bachelor's degree in CS, Proficiency in Python, Strong communication skills"
+                value={formData.requirements}
+                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Separate each requirement with a comma
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="status">Status *</Label>
-              <Select 
-                value={formData.status} 
+              <Select
+                value={formData.status}
                 onValueChange={(val) => setFormData({ ...formData, status: val })}
               >
                 <SelectTrigger>

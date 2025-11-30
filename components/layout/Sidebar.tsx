@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserRole } from '@/types/database';
+import { Badge } from '@/components/ui/badge';
+import { UserRole, Profile } from '@/types/database';
+import { createSupabaseClient } from '@/lib/supabase';
 import {
   LayoutDashboard,
   FileText,
@@ -19,6 +22,7 @@ import {
   UserCog,
   MessageSquare,
   BarChart3,
+  HelpCircle,
   LucideIcon,
 } from 'lucide-react';
 
@@ -34,7 +38,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Programs', href: '/programs', icon: Award },
     { title: 'My Applications', href: '/applications', icon: FileText },
     { title: 'Mentorship', href: '/mentorship', icon: Users },
-    { title: 'Internships', href: '/internships', icon: Briefcase },
+    { title: 'Opportunities', href: '/opportunities', icon: Briefcase },
     { title: 'Profile', href: '/profile', icon: Settings },
   ],
   mentor: [
@@ -42,6 +46,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'My Mentees', href: '/mentor/mentees', icon: Users },
     { title: 'Sessions', href: '/mentor/sessions', icon: Calendar },
     { title: 'Resources', href: '/mentor/resources', icon: BookOpen },
+    { title: 'FAQs', href: '/mentor/faqs', icon: HelpCircle },
     { title: 'Profile', href: '/mentor/profile', icon: Settings },
     { title: 'Support', href: '/mentor/support', icon: MessageSquare },
   ],
@@ -50,7 +55,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Organization', href: '/partner/organization', icon: Building2 },
     { title: 'Opportunities', href: '/partner/opportunities', icon: Briefcase },
     { title: 'Candidates', href: '/partner/candidates', icon: Users },
-    { title: 'Reports', href: '/partner/reports', icon: BarChart3 },
+    { title: 'Reports', href: '/partner/candidates/reports', icon: BarChart3 },
   ],
   admin: [
     { title: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -65,11 +70,52 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
 
 interface SidebarProps {
   role: UserRole;
+  profile: Profile | null;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, profile }: SidebarProps) {
   const pathname = usePathname();
   const navItems = navigationConfig[role];
+  const supabase = createSupabaseClient();
+  const [pendingMenteesCount, setPendingMenteesCount] = useState(0);
+
+  // Fetch pending mentees count for mentors
+  useEffect(() => {
+    if (role === 'mentor' && profile?.id) {
+      const fetchPendingCount = async () => {
+        const { count } = await supabase
+          .from('mentorship_matches')
+          .select('*', { count: 'exact', head: true })
+          .eq('mentor_id', profile.id)
+          .eq('status', 'pending');
+
+        setPendingMenteesCount(count || 0);
+      };
+
+      fetchPendingCount();
+
+      // Set up realtime subscription to update count
+      const channel = supabase
+        .channel('mentorship_matches_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'mentorship_matches',
+            filter: `mentor_id=eq.${profile.id}`
+          },
+          () => {
+            fetchPendingCount();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [role, profile?.id]);
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-background">
@@ -87,6 +133,8 @@ export function Sidebar({ role }: SidebarProps) {
         <nav className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            const showBadge = role === 'mentor' && item.href === '/mentor/mentees' && pendingMenteesCount > 0;
+
             return (
               <Link
                 key={item.href}
@@ -99,7 +147,15 @@ export function Sidebar({ role }: SidebarProps) {
                 )}
               >
                 <item.icon className="h-4 w-4" />
-                {item.title}
+                <span className="flex-1">{item.title}</span>
+                {showBadge && (
+                  <Badge
+                    variant={isActive ? "secondary" : "default"}
+                    className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {pendingMenteesCount}
+                  </Badge>
+                )}
               </Link>
             );
           })}

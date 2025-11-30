@@ -23,18 +23,18 @@ export default function ProgramDetailPage() {
   const params = useParams();
   const router = useRouter();
   const supabase = createSupabaseClient();
-  const { user } = useUserProfile();
-  
+  const { user, profile } = useUserProfile();
+
   const [program, setProgram] = useState<Program | null>(null);
   const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (params.id) {
+    if (params.id && profile) {
       fetchProgram();
       checkApplication();
     }
-  }, [params.id]);
+  }, [params.id, profile]);
 
   const fetchProgram = async () => {
     try {
@@ -54,12 +54,14 @@ export default function ProgramDetailPage() {
   };
 
   const checkApplication = async () => {
+    if (!profile) return;
+
     try {
       const { data } = await supabase
         .from('applications')
         .select('id')
         .eq('program_id', params.id)
-        .eq('applicant_id', user?.id)
+        .eq('applicant_id', profile.id)
         .single();
 
       setHasApplied(!!data);
@@ -136,12 +138,23 @@ export default function ProgramDetailPage() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Application Period</p>
+                    <p className="text-sm font-medium">Program Duration</p>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(program.start_date)} - {formatDate(program.end_date)}
                     </p>
                   </div>
                 </div>
+                {program.application_start_date && program.application_end_date && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Application Period</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(program.application_start_date)} - {formatDate(program.application_end_date)}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -157,12 +170,10 @@ export default function ProgramDetailPage() {
                 <CardTitle>Eligibility Criteria</CardTitle>
               </CardHeader>
               <CardContent>
-                {program.eligibility_criteria && Object.keys(program.eligibility_criteria).length > 0 ? (
+                {program.eligibility_criteria && Array.isArray(program.eligibility_criteria) && program.eligibility_criteria.length > 0 ? (
                   <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-                    {Object.entries(program.eligibility_criteria).map(([key, value]) => (
-                      <li key={key}>
-                        {key}: {String(value)}
-                      </li>
+                    {program.eligibility_criteria.map((criterion: string, index: number) => (
+                      <li key={index}>{criterion}</li>
                     ))}
                   </ul>
                 ) : (
@@ -182,7 +193,7 @@ export default function ProgramDetailPage() {
                     <Link href="/applications">View My Applications</Link>
                   </Button>
                 </div>
-              ) : program.status === 'open' ? (
+              ) : program.status === 'active' ? (
                 <div className="text-center py-4">
                   <p className="text-muted-foreground mb-4">Ready to apply for this program?</p>
                   <Button asChild size="lg">

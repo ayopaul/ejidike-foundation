@@ -13,10 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Upload, Building2 } from 'lucide-react';
+import { Loader2, Save, Upload, Building2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
+import { notifyAdmins } from '@/lib/notifications';
 
 export default function OrganizationProfilePage() {
   const { user, profile } = useUserProfile();
@@ -27,7 +29,10 @@ export default function OrganizationProfilePage() {
     organization_name: '',
     description: '',
     website: '',
-    logo_url: ''
+    logo_url: '',
+    sector: '',
+    location: '',
+    verification_status: 'pending' as 'pending' | 'verified' | 'rejected'
   });
   const [contactInfo, setContactInfo] = useState({
     full_name: '',
@@ -43,6 +48,38 @@ export default function OrganizationProfilePage() {
         email: profile.email || '',
         phone: profile.phone || ''
       });
+
+      // Subscribe to real-time updates for verification status
+      const channel = supabase
+        .channel('partner_org_updates')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'partner_organizations',
+          filter: `user_id=eq.${profile.id}`
+        }, (payload) => {
+          const updatedOrg = payload.new as any;
+          setOrganization(prev => ({
+            ...prev,
+            verification_status: updatedOrg.verification_status || 'pending'
+          }));
+
+          // Show toast notification when status changes
+          if (updatedOrg.verification_status === 'verified') {
+            toast.success('Your organization has been verified!', {
+              description: 'You can now create opportunities for applicants.'
+            });
+          } else if (updatedOrg.verification_status === 'rejected') {
+            toast.error('Organization verification was not approved', {
+              description: 'Please contact support for more information.'
+            });
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user, profile]);
 
@@ -51,17 +88,23 @@ export default function OrganizationProfilePage() {
       const { data, error } = await supabase
         .from('partner_organizations')
         .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', profile?.id)
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Error fetching organization:', error);
+        throw error;
+      }
       
       if (data) {
         setOrganization({
           organization_name: data.organization_name || '',
           description: data.description || '',
           website: data.website || '',
-          logo_url: data.logo_url || ''
+          logo_url: data.logo_url || '',
+          sector: data.sector || '',
+          location: data.location || '',
+          verification_status: data.verification_status || 'pending'
         });
       }
     } catch (error: any) {
@@ -72,37 +115,103 @@ export default function OrganizationProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!user || !profile) {
+      toast.error('User profile not loaded. Please refresh the page.');
+      return;
+    }
+
+    if (!organization.organization_name || !organization.sector) {
+      toast.error('Please fill in all required fields (Organization Name and Sector)');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      // Update contact info
+      // First, verify the profile exists
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', profile.id)
+        .single();
+
+      if (checkError || !existingProfile) {
+        console.error('Profile check error:', checkError);
+        toast.error('Profile not found. Please contact support.');
+        setSaving(false);
+        return;
+      }
+
+      // Update contact info in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           full_name: contactInfo.full_name,
           phone: contactInfo.phone
         })
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        throw profileError;
+      }
 
-      // Update organization
+      // Check if organization already exists
+      const { data: existingOrg } = await supabase
+        .from('partner_organizations')
+        .select('id, verification_status')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      const isNewSubmission = !existingOrg;
+
+      // Update organization - include all required fields
       const { error: orgError } = await supabase
         .from('partner_organizations')
         .upsert({
-          user_id: user?.id,
+          user_id: profile.id,
           organization_name: organization.organization_name,
           description: organization.description,
           website: organization.website,
-          logo_url: organization.logo_url
+          logo_url: organization.logo_url,
+          sector: organization.sector,
+          location: organization.location,
+          contact_person: contactInfo.full_name,
+          contact_email: profile.email || user.email || '',
+          contact_phone: contactInfo.phone,
+          verification_status: 'pending'
         });
 
-      if (orgError) throw orgError;
+      if (orgError) {
+        console.error('Organization upsert error:', orgError);
+        throw orgError;
+      }
+
+      // Notify admins about new partner verification request
+      if (isNewSubmission) {
+        try {
+          await notifyAdmins({
+            title: 'New Partner Verification Request',
+            message: `${organization.organization_name} has submitted their organization profile for verification.`,
+            type: 'info',
+            link: `/admin/partners/${profile.id}`,
+            metadata: {
+              organizationName: organization.organization_name,
+              partnerId: profile.id
+            }
+          });
+        } catch (notifError) {
+          console.error('Failed to notify admins:', notifError);
+          // Don't fail the save if notification fails
+        }
+      }
 
       toast.success('Profile updated successfully');
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      toast.error('Failed to update profile');
+      toast.error('Failed to update profile', {
+        description: error.message || 'Please try again'
+      });
     } finally {
       setSaving(false);
     }
@@ -170,10 +279,37 @@ export default function OrganizationProfilePage() {
           <CardTitle>Verification Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <Badge variant="secondary">Pending Verification</Badge>
-          <p className="text-sm text-muted-foreground mt-2">
-            Your organization is under review. You'll be notified once verified.
-          </p>
+          {organization.verification_status === 'verified' ? (
+            <>
+              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white font-semibold">
+                <CheckCircle className="h-4 w-4 mr-1.5" />
+                Verified
+              </Badge>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your organization has been verified! You can now create opportunities.
+              </p>
+            </>
+          ) : organization.verification_status === 'rejected' ? (
+            <>
+              <Badge variant="destructive" className="font-semibold">
+                <XCircle className="h-4 w-4 mr-1.5" />
+                Rejected
+              </Badge>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your organization verification was not approved. Please contact support for details.
+              </p>
+            </>
+          ) : (
+            <>
+              <Badge variant="secondary" className="font-semibold">
+                <Clock className="h-4 w-4 mr-1.5" />
+                Pending Verification
+              </Badge>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your organization is under review. You'll be notified once verified.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -229,11 +365,43 @@ export default function OrganizationProfilePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="org_name">Organization Name</Label>
+            <Label htmlFor="org_name">Organization Name *</Label>
             <Input
               id="org_name"
               value={organization.organization_name}
               onChange={(e) => setOrganization({ ...organization, organization_name: e.target.value })}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sector">Sector *</Label>
+            <Select
+              value={organization.sector}
+              onValueChange={(value) => setOrganization({ ...organization, sector: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select your organization sector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Technology">Technology</SelectItem>
+                <SelectItem value="Education">Education</SelectItem>
+                <SelectItem value="Healthcare">Healthcare</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+                <SelectItem value="Manufacturing">Manufacturing</SelectItem>
+                <SelectItem value="Retail">Retail</SelectItem>
+                <SelectItem value="Agriculture">Agriculture</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              placeholder="e.g., Lagos, Nigeria"
+              value={organization.location}
+              onChange={(e) => setOrganization({ ...organization, location: e.target.value })}
             />
           </div>
           <div className="space-y-2">

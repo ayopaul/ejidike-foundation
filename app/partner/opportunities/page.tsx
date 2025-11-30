@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Loader2, MapPin, Clock, Calendar } from 'lucide-react';
+import { Plus, Edit, Loader2, MapPin, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatDate } from '@/lib/utils';
@@ -17,22 +17,36 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function OpportunitiesPage() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchOpportunities();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchOpportunities = async () => {
     try {
+      // First get the partner organization ID
+      const { data: org } = await supabase
+        .from('partner_organizations')
+        .select('id')
+        .eq('user_id', profile?.id)
+        .single();
+
+      if (!org) {
+        setOpportunities([]);
+        setLoading(false);
+        return;
+      }
+
+      // Then fetch opportunities for this organization
       const { data, error } = await supabase
         .from('partner_opportunities')
         .select('*')
-        .eq('partner_id', user?.id)
+        .eq('partner_id', org.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -86,8 +100,8 @@ export default function OpportunitiesPage() {
             <Card key={opp.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <Badge variant={opp.opportunity_type === 'internship' ? 'default' : 'secondary'}>
-                    {opp.opportunity_type}
+                  <Badge variant={opp.type === 'internship' ? 'default' : 'secondary'}>
+                    {opp.type}
                   </Badge>
                   <Badge variant={opp.status === 'open' ? 'default' : 'secondary'}>
                     {opp.status}
@@ -104,18 +118,15 @@ export default function OpportunitiesPage() {
                     <div className="flex items-center text-sm">
                       <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                       <span>{opp.location}</span>
+                      {opp.remote_option && (
+                        <Badge variant="outline" className="ml-2">Remote</Badge>
+                      )}
                     </div>
                   )}
-                  {opp.duration && (
-                    <div className="flex items-center text-sm">
-                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>{opp.duration}</span>
-                    </div>
-                  )}
-                  {opp.deadline && (
+                  {opp.application_deadline && (
                     <div className="flex items-center text-sm">
                       <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>Deadline: {formatDate(opp.deadline)}</span>
+                      <span>Deadline: {formatDate(opp.application_deadline)}</span>
                     </div>
                   )}
                 </div>

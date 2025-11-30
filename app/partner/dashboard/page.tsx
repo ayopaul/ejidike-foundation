@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 
 export default function PartnerDashboard() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const supabase = createSupabaseClient();
   
   const [organization, setOrganization] = useState<any>(null);
@@ -35,21 +35,25 @@ export default function PartnerDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchDashboardData();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
       // Fetch partner organization
-      const { data: org } = await supabase
+      const { data: org, error: orgError } = await supabase
         .from('partner_organizations')
         .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', profile?.id)
+        .maybeSingle();
+
+      if (orgError) {
+        console.error('Error fetching organization:', orgError);
+      }
 
       setOrganization(org);
 
@@ -251,21 +255,24 @@ export default function PartnerDashboard() {
                               <Badge variant={opp.status === 'open' ? 'default' : 'secondary'}>
                                 {opp.status}
                               </Badge>
-                              <Badge variant="outline">{opp.type}</Badge>
+                              <Badge variant="outline">{opp.opportunity_type}</Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mb-2">
-                              {opp.description?.substring(0, 150)}...
+                              {opp.description?.substring(0, 150)}{opp.description?.length > 150 ? '...' : ''}
                             </p>
                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {opp.location}
-                                {opp.remote_option && ' (Remote OK)'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                Deadline: {formatDate(opp.application_deadline)}
-                              </span>
+                              {opp.location && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {opp.location}
+                                </span>
+                              )}
+                              {opp.deadline && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  Deadline: {formatDate(opp.deadline)}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex flex-col gap-2 ml-4">

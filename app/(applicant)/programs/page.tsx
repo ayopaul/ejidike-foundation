@@ -8,8 +8,6 @@
 import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +42,7 @@ export default function ProgramsPage() {
       const { data, error } = await supabase
         .from('programs')
         .select('*')
-        .eq('status', 'open')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -76,9 +74,7 @@ export default function ProgramsPage() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={['applicant']}>
-      
-        <div className="space-y-6">
+    <div className="space-y-6">
           {/* Header */}
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Available Programs</h2>
@@ -168,8 +164,6 @@ export default function ProgramsPage() {
               ))}
             </div>
           )}
-        </div>
-      
-    </ProtectedRoute>
+    </div>
   );
 }

@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { role, loading } = useUserProfile();
+  const { profile, role, loading } = useUserProfile();
 
   if (loading) {
     return (
@@ -26,7 +26,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar role={role} />
+      <Sidebar role={role} profile={profile} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto bg-muted/10 p-6">

@@ -17,33 +17,59 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function MentorSessionsPage() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchSessions();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchSessions = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all mentorship matches for this mentor
+      const { data: matches } = await supabase
+        .from('mentorship_matches')
+        .select('id, mentee_id')
+        .eq('mentor_id', profile?.id);
+
+      if (!matches || matches.length === 0) {
+        setSessions([]);
+        setLoading(false);
+        return;
+      }
+
+      const matchIds = matches.map(m => m.id);
+
+      // Fetch sessions for these matches
+      const { data: sessionsData, error } = await supabase
         .from('mentorship_sessions')
-        .select(`
-          *,
-          match:mentorship_matches (
-            mentee:profiles!mentee_id (
-              full_name
-            )
-          )
-        `)
-        .eq('match.mentor_id', user?.id)
+        .select('*')
+        .in('match_id', matchIds)
         .order('session_date', { ascending: false });
 
       if (error) throw error;
-      setSessions(data || []);
+
+      // Fetch mentee profiles
+      const menteeIds = matches.map(m => m.mentee_id);
+      const { data: menteeProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', menteeIds);
+
+      // Create maps for combining data
+      const menteeMap = new Map(menteeProfiles?.map(m => [m.id, m]) || []);
+      const matchMap = new Map(matches.map(m => [m.id, { ...m, mentee: menteeMap.get(m.mentee_id) }]) || []);
+
+      // Combine sessions with match and mentee data
+      const combinedSessions = sessionsData?.map(session => ({
+        ...session,
+        match: matchMap.get(session.match_id)
+      })) || [];
+
+      setSessions(combinedSessions);
     } catch (error: any) {
       console.error('Error fetching sessions:', error);
       toast.error('Failed to load sessions');

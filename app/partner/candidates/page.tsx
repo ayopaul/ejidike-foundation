@@ -15,22 +15,36 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function CandidatesPage() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchOpportunities();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchOpportunities = async () => {
     try {
+      // First get the partner organization ID
+      const { data: org } = await supabase
+        .from('partner_organizations')
+        .select('id')
+        .eq('user_id', profile?.id)
+        .single();
+
+      if (!org) {
+        setOpportunities([]);
+        setLoading(false);
+        return;
+      }
+
+      // Then fetch opportunities for this organization
       const { data, error } = await supabase
         .from('partner_opportunities')
         .select('*')
-        .eq('partner_id', user?.id)
+        .eq('partner_id', org.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -82,7 +96,7 @@ export default function CandidatesPage() {
                   <div>
                     <CardTitle>{opp.title}</CardTitle>
                     <CardDescription className="mt-2">
-                      {opp.opportunity_type} • Posted {new Date(opp.created_at).toLocaleDateString()}
+                      {opp.type} • Posted {new Date(opp.created_at).toLocaleDateString()}
                     </CardDescription>
                   </div>
                   <Link href={`/partner/candidates/${opp.id}`}>

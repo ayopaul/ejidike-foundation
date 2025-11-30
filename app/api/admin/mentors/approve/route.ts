@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createNotification } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -144,6 +145,81 @@ export async function POST(request: NextRequest) {
         .from('profiles')
         .update({ role: 'mentor' })
         .eq('id', updatedApp.profile.id);
+
+      // Send approval notification
+      try {
+        await createNotification({
+          userId: updatedApp.profile.id,
+          title: 'Mentor Application Approved!',
+          message: 'Congratulations! Your mentor application has been approved. You can now start mentoring and making a difference.',
+          type: 'success',
+          link: '/mentor/profile',
+          metadata: {
+            applicationId: application_id,
+            status: 'approved'
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      // Send email
+      try {
+        const { sendEmail } = await import('@/lib/email');
+        const { mentorApprovedEmail } = await import('@/lib/email-templates');
+
+        const emailContent = mentorApprovedEmail({
+          mentorName: updatedApp.profile.full_name
+        });
+
+        await sendEmail({
+          to: updatedApp.profile.email,
+          toName: updatedApp.profile.full_name,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+      }
+    } else {
+      // Send rejection notification
+      try {
+        await createNotification({
+          userId: updatedApp.profile.id,
+          title: 'Mentor Application Update',
+          message: 'Thank you for your interest in becoming a mentor. We are unable to approve your application at this time.',
+          type: 'warning',
+          link: '/dashboard',
+          metadata: {
+            applicationId: application_id,
+            status: 'rejected'
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      // Send email
+      try {
+        const { sendEmail } = await import('@/lib/email');
+        const { mentorRejectedEmail } = await import('@/lib/email-templates');
+
+        const emailContent = mentorRejectedEmail({
+          mentorName: updatedApp.profile.full_name,
+          adminNotes: admin_notes
+        });
+
+        await sendEmail({
+          to: updatedApp.profile.email,
+          toName: updatedApp.profile.full_name,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+      }
     }
 
     return NextResponse.json({

@@ -18,14 +18,18 @@ import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { createNotification } from '@/lib/notifications';
 
 export default function AdminPartnerDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { profile: adminProfile } = useUserProfile();
   const [profile, setProfile] = useState<any>(null);
   const [organization, setOrganization] = useState<any>(null);
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -46,10 +50,13 @@ export default function AdminPartnerDetailPage() {
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // Then try to fetch the partner organization (may not exist)
+      // Then try to fetch the partner organization with verifier info (may not exist)
       const { data: orgData, error: orgError } = await supabase
         .from('partner_organizations')
-        .select('*')
+        .select(`
+          *,
+          verified_by_profile:profiles!verified_by(full_name, email)
+        `)
         .eq('user_id', params.id)
         .maybeSingle();
 
@@ -83,36 +90,122 @@ export default function AdminPartnerDetailPage() {
   };
 
   const handleVerify = async () => {
+    if (!adminProfile) {
+      toast.error('Admin profile not loaded');
+      return;
+    }
+
+    setVerifying(true);
     try {
+      // Update organization with verification details
       const { error } = await supabase
         .from('partner_organizations')
-        .update({ verification_status: 'verified' })
+        .update({
+          verification_status: 'verified',
+          verified_by: adminProfile.id,
+          verified_at: new Date().toISOString()
+        })
         .eq('user_id', params.id);
 
       if (error) throw error;
 
-      toast.success('Partner verified');
+      // Send notification email
+      try {
+        await fetch('/api/partners/notify-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partnerId: params.id,
+            status: 'verified',
+            organizationName: organization?.organization_name
+          })
+        });
+      } catch (emailError) {
+        console.error('Failed to send notification email:', emailError);
+        // Don't fail the verification if email fails
+      }
+
+      // Create in-app notification for partner
+      try {
+        await createNotification({
+          userId: params.id as string,
+          title: 'Organization Verified',
+          message: `Congratulations! Your organization "${organization?.organization_name}" has been verified. You can now post opportunities and connect with applicants.`,
+          type: 'success',
+          link: '/partner/dashboard'
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      toast.success('Partner verified successfully');
       fetchPartner();
     } catch (error: any) {
+      console.error('Verification error:', error);
       toast.error('Failed to verify partner');
+    } finally {
+      setVerifying(false);
     }
   };
 
   const handleReject = async () => {
-    if (!confirm('Reject this partner?')) return;
+    if (!adminProfile) {
+      toast.error('Admin profile not loaded');
+      return;
+    }
 
+    if (!confirm('Are you sure you want to reject this partner? They will be notified via email.')) return;
+
+    setVerifying(true);
     try {
+      // Update organization with rejection details
       const { error } = await supabase
         .from('partner_organizations')
-        .update({ verification_status: 'rejected' })
+        .update({
+          verification_status: 'rejected',
+          verified_by: adminProfile.id,
+          verified_at: new Date().toISOString()
+        })
         .eq('user_id', params.id);
 
       if (error) throw error;
 
+      // Send notification email
+      try {
+        await fetch('/api/partners/notify-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            partnerId: params.id,
+            status: 'rejected',
+            organizationName: organization?.organization_name
+          })
+        });
+      } catch (emailError) {
+        console.error('Failed to send notification email:', emailError);
+        // Don't fail the rejection if email fails
+      }
+
+      // Create in-app notification for partner
+      try {
+        await createNotification({
+          userId: params.id as string,
+          title: 'Organization Application Update',
+          message: `Your organization application for "${organization?.organization_name}" could not be verified at this time. Please contact support for more information.`,
+          type: 'warning',
+          link: '/partner/organization'
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
       toast.success('Partner rejected');
       router.push('/admin/partners');
     } catch (error: any) {
+      console.error('Rejection error:', error);
       toast.error('Failed to reject partner');
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -227,6 +320,19 @@ export default function AdminPartnerDetailPage() {
             <p className="text-sm font-medium">Joined</p>
             <p className="text-sm text-muted-foreground">{formatDate(profile.created_at)}</p>
           </div>
+          {organization?.verified_at && (
+            <div>
+              <p className="text-sm font-medium">
+                {organization.verification_status === 'verified' ? 'Verified' : 'Reviewed'} By
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {organization.verified_by_profile?.full_name || 'Unknown Admin'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatDate(organization.verified_at)}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -234,13 +340,40 @@ export default function AdminPartnerDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex gap-3">
-              <Button className="flex-1" onClick={handleVerify}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Verify Partner
+              <Button
+                className="flex-1"
+                onClick={handleVerify}
+                disabled={verifying || !adminProfile}
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Verify Partner
+                  </>
+                )}
               </Button>
-              <Button variant="destructive" className="flex-1" onClick={handleReject}>
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleReject}
+                disabled={verifying || !adminProfile}
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

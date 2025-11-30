@@ -32,22 +32,28 @@ export default function MentorMenteeDetailPage() {
 
   const fetchMatch = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch the mentorship match
+      const { data: matchData, error } = await supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentee:profiles!mentee_id (
-            full_name,
-            email,
-            avatar_url,
-            phone
-          )
-        `)
+        .select('*')
         .eq('id', params.id)
         .single();
 
       if (error) throw error;
-      setMatch(data);
+
+      // Fetch mentee profile separately
+      if (matchData) {
+        const { data: menteeData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url, phone')
+          .eq('id', matchData.mentee_id)
+          .single();
+
+        setMatch({
+          ...matchData,
+          mentee: menteeData
+        });
+      }
     } catch (error: any) {
       console.error('Error fetching match:', error);
       toast.error('Failed to load mentee details');
@@ -144,7 +150,7 @@ export default function MentorMenteeDetailPage() {
             <Calendar className="h-5 w-5 mr-3 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">Matched Since</p>
-              <p className="text-sm text-muted-foreground">{formatDate(match.matched_at)}</p>
+              <p className="text-sm text-muted-foreground">{formatDate(match.start_date || match.created_at)}</p>
             </div>
           </div>
         </CardContent>

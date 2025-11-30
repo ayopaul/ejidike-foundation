@@ -18,11 +18,12 @@ import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { createNotification } from '@/lib/notifications';
 
 export default function LogSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const matchId = searchParams.get('match');
 
   const [matches, setMatches] = useState<any[]>([]);
@@ -31,33 +32,47 @@ export default function LogSessionPage() {
   const [formData, setFormData] = useState({
     match_id: matchId || '',
     session_date: new Date().toISOString().split('T')[0],
+    session_time: '10:00',
     duration: '',
     mode: 'virtual',
-    notes: '',
-    status: 'completed'
+    notes: ''
   });
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchMatches();
     }
-  }, [user]);
+  }, [profile]);
 
   const fetchMatches = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch mentorship matches
+      const { data: matchesData, error } = await supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentee:profiles!mentee_id (
-            full_name
-          )
-        `)
-        .eq('mentor_id', user?.id)
+        .select('*')
+        .eq('mentor_id', profile?.id)
         .eq('status', 'active');
 
       if (error) throw error;
-      setMatches(data || []);
+
+      // Fetch mentee profiles separately
+      if (matchesData && matchesData.length > 0) {
+        const menteeIds = matchesData.map(m => m.mentee_id);
+        const { data: menteeProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', menteeIds);
+
+        // Combine matches with mentee data
+        const menteesMap = new Map(menteeProfiles?.map(m => [m.id, m]) || []);
+        const combinedData = matchesData.map(match => ({
+          ...match,
+          mentee: menteesMap.get(match.mentee_id)
+        }));
+        setMatches(combinedData);
+      } else {
+        setMatches([]);
+      }
     } catch (error: any) {
       console.error('Error fetching matches:', error);
       toast.error('Failed to load mentees');
@@ -77,18 +92,56 @@ export default function LogSessionPage() {
     setSaving(true);
 
     try {
-      const { error } = await supabase
+      // Combine date and time into a single datetime
+      const sessionDateTime = `${formData.session_date}T${formData.session_time}:00`;
+
+      console.log('[Session Log] Inserting session:', {
+        match_id: formData.match_id,
+        session_date: sessionDateTime,
+        duration_minutes: parseInt(formData.duration),
+        mode: formData.mode,
+        notes: formData.notes
+      });
+
+      const { data, error } = await supabase
         .from('mentorship_sessions')
         .insert({
           match_id: formData.match_id,
-          session_date: formData.session_date,
-          duration: parseInt(formData.duration),
+          session_date: sessionDateTime,
+          duration_minutes: parseInt(formData.duration),
           mode: formData.mode,
-          notes: formData.notes,
-          status: formData.status
-        });
+          notes: formData.notes
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Session Log] Error:', error);
+        throw error;
+      }
+
+      console.log('[Session Log] Session created successfully:', data);
+
+      // Get the mentee ID from the selected match
+      const selectedMatch = matches.find(m => m.id === formData.match_id);
+      const menteeId = selectedMatch?.mentee_id;
+      const menteeName = selectedMatch?.mentee?.full_name;
+
+      // Send notification to mentee
+      if (menteeId) {
+        try {
+          await createNotification({
+            userId: menteeId,
+            title: 'New Session Logged',
+            message: `${profile?.full_name || 'Your mentor'} has logged a ${parseInt(formData.duration)} minute session with you`,
+            type: 'info',
+            link: '/mentorship'
+          });
+          console.log('[Session Log] Notification sent to mentee');
+        } catch (notifError) {
+          console.error('[Session Log] Error sending notification:', notifError);
+          // Don't fail the session logging if notification fails
+        }
+      }
 
       toast.success('Session logged successfully');
       router.push('/mentor/sessions');
@@ -149,7 +202,7 @@ export default function LogSessionPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="session_date">Session Date *</Label>
                 <Input
@@ -157,6 +210,17 @@ export default function LogSessionPage() {
                   type="date"
                   value={formData.session_date}
                   onChange={(e) => setFormData({ ...formData, session_date: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="session_time">Session Time *</Label>
+                <Input
+                  id="session_time"
+                  type="time"
+                  value={formData.session_time}
+                  onChange={(e) => setFormData({ ...formData, session_time: e.target.value })}
                   required
                 />
               </div>
@@ -200,23 +264,6 @@ export default function LogSessionPage() {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={5}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(val) => setFormData({ ...formData, status: val })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>

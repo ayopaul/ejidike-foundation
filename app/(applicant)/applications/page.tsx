@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Eye, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatDate, getStatusColor } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Application {
   id: string;
@@ -44,23 +45,115 @@ export default function ApplicationsPage() {
   }, [profile]);
 
   const fetchApplications = async () => {
+    if (!profile?.id) {
+      console.log('No profile ID available');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      console.log('Fetching applications for profile:', profile.id);
+
+      // First, get applications
+      const { data: appsData, error: appsError } = await supabase
         .from('applications')
-        .select(`
-          *,
-          program:programs(title, type)
-        `)
-        .eq('applicant_id', profile?.id)
+        .select('*')
+        .eq('applicant_id', profile.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setApplications(data || []);
+      console.log('Applications query result:', { appsData, appsError });
+
+      if (appsError) {
+        console.error('Applications error details:', appsError);
+        toast.error('Failed to load applications', {
+          description: appsError.message || 'Database error'
+        });
+        throw appsError;
+      }
+
+      if (!appsData || appsData.length === 0) {
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get unique program IDs
+      const programIds = [...new Set(appsData.map(app => app.program_id))];
+
+      // Fetch programs separately
+      const { data: programsData, error: programsError } = await supabase
+        .from('programs')
+        .select('id, title, type')
+        .in('id', programIds);
+
+      console.log('Programs query result:', { programsData, programsError });
+
+      if (programsError) {
+        console.error('Error fetching programs:', programsError);
+        toast.error('Failed to load program details', {
+          description: programsError.message
+        });
+        // Continue without program data
+        setApplications(appsData.map(app => ({ ...app, program: { title: 'Unknown Program', type: 'grant' } })));
+        setLoading(false);
+        return;
+      }
+
+      // Create a map of programs by ID
+      const programsMap = new Map(programsData?.map(p => [p.id, p]) || []);
+
+      // Combine applications with their programs
+      const combinedData = appsData.map(app => ({
+        ...app,
+        program: programsMap.get(app.program_id) || { title: 'Unknown Program', type: 'grant' }
+      }));
+
+      setApplications(combinedData);
     } catch (error) {
       console.error('Error fetching applications:', error);
+      toast.error('Failed to load applications');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (applicationId: string) => {
+    if (!confirm('Delete this draft application? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Delete associated documents first
+      const { error: docsError } = await supabase
+        .from('application_documents')
+        .delete()
+        .eq('application_id', applicationId);
+
+      if (docsError) {
+        console.error('Error deleting documents:', docsError);
+        // Continue anyway - documents might not exist
+      }
+
+      // Delete the application
+      const { error } = await supabase
+        .from('applications')
+        .delete()
+        .eq('id', applicationId);
+
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+
+      toast.success('Draft application deleted');
+      fetchApplications(); // Refresh the list
+    } catch (error: any) {
+      console.error('Failed to delete application:', error);
+      toast.error('Failed to delete application', {
+        description: error.message || 'Please try again'
+      });
     }
   };
 
@@ -109,7 +202,11 @@ export default function ApplicationsPage() {
                   Continue
                 </Link>
               </Button>
-              <Button variant="destructive" size="sm">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDelete(application.id)}
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </>

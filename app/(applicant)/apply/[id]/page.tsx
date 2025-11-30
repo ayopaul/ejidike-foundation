@@ -17,6 +17,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import FileUpload from '@/components/shared/FileUpload';
+import { notifyAdmins } from '@/lib/notifications';
 
 export default function ApplyPage() {
   const params = useParams();
@@ -39,13 +40,16 @@ export default function ApplyPage() {
   });
 
   useEffect(() => {
-    if (params.id) {
+    if (params.id && profile) {
       fetchProgram();
       if (draftId) {
         loadDraft();
+      } else {
+        // Auto-create draft application so user can upload documents immediately
+        createDraftApplication();
       }
     }
-  }, [params.id, draftId]);
+  }, [params.id, profile, draftId]);
 
   const fetchProgram = async () => {
     try {
@@ -74,7 +78,7 @@ export default function ApplyPage() {
         .single();
 
       if (error) throw error;
-      
+
       if (data.application_data) {
         setFormData(data.application_data);
       }
@@ -84,32 +88,29 @@ export default function ApplyPage() {
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleSaveDraft = async () => {
-    if (!profile) {
-      toast.error('You must be logged in');
-      return;
-    }
-
-    setSaving(true);
+  const createDraftApplication = async () => {
+    if (!profile) return;
 
     try {
-      if (applicationId) {
-        // Update existing draft
-        const { error } = await supabase
-          .from('applications')
-          .update({
-            application_data: formData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', applicationId);
+      // Check if a draft already exists for this user and program
+      const { data: existingDraft, error: checkError } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('program_id', params.id)
+        .eq('applicant_id', profile.id)
+        .eq('status', 'draft')
+        .maybeSingle();
 
-        if (error) throw error;
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking for existing draft:', checkError);
+        return;
+      }
+
+      if (existingDraft) {
+        // Use existing draft
+        setApplicationId(existingDraft.id);
       } else {
-        // Create new draft
+        // Create new draft application silently
         const { data, error } = await supabase
           .from('applications')
           .insert({
@@ -124,6 +125,60 @@ export default function ApplyPage() {
         if (error) throw error;
         setApplicationId(data.id);
       }
+    } catch (error: any) {
+      console.error('Error creating draft application:', error);
+      // Fail silently - user can still submit without documents
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Auto-save will happen via the useEffect below
+  };
+
+  // Auto-save draft when form data changes
+  useEffect(() => {
+    if (!applicationId || !profile) return;
+
+    // Debounce auto-save by 2 seconds
+    const timeoutId = setTimeout(() => {
+      supabase
+        .from('applications')
+        .update({
+          application_data: formData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Auto-save failed:', error);
+          }
+          // Silent auto-save - no toast notification
+        });
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, applicationId, profile]);
+
+  const handleSaveDraft = async () => {
+    if (!profile || !applicationId) {
+      toast.error('Unable to save draft');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Update the auto-created draft with current form data
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          application_data: formData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
 
       toast.success('Draft saved', {
         description: 'You can continue this application later'
@@ -150,51 +205,51 @@ export default function ApplyPage() {
       return;
     }
 
-    if (!profile) {
-      toast.error('You must be logged in');
+    if (!profile || !applicationId) {
+      toast.error('Unable to submit application');
       return;
     }
 
     setSubmitting(true);
 
     try {
-      let finalApplicationId = applicationId;
+      // Update the auto-created draft to submitted status
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          status: 'submitted',
+          application_data: formData,
+          submitted_at: new Date().toISOString()
+        })
+        .eq('id', applicationId);
 
-      if (applicationId) {
-        // Update existing draft to submitted
-        const { error } = await supabase
-          .from('applications')
-          .update({
-            status: 'submitted',
-            application_data: formData,
-            submitted_at: new Date().toISOString()
-          })
-          .eq('id', applicationId);
+      if (error) throw error;
 
-        if (error) throw error;
-      } else {
-        // Create new application as submitted
-        const { data, error } = await supabase
-          .from('applications')
-          .insert({
-            program_id: params.id,
-            applicant_id: profile.id,
-            status: 'submitted',
-            application_data: formData,
-            submitted_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        finalApplicationId = data.id;
+      // Notify admins about new application
+      try {
+        await notifyAdmins({
+          title: 'New Program Application',
+          message: `${profile.full_name} has submitted an application for "${program?.title}".`,
+          type: 'info',
+          link: `/admin/dashboard/applications/${applicationId}`,
+          metadata: {
+            programId: params.id,
+            programTitle: program?.title,
+            applicantId: profile.id,
+            applicantName: profile.full_name,
+            applicationId: applicationId
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to notify admins:', notifError);
+        // Don't fail the submission if notification fails
       }
 
       toast.success('Application submitted!', {
         description: 'We will review your application and get back to you soon.',
         action: {
           label: 'View Application',
-          onClick: () => router.push(`/applications/${finalApplicationId}`)
+          onClick: () => router.push(`/applications/${applicationId}`)
         }
       });
 
@@ -334,64 +389,60 @@ export default function ApplyPage() {
         </CardContent>
       </Card>
 
-      {/* File Upload */}
-      {applicationId && (
+      {/* File Upload - Always available */}
+      {applicationId ? (
         <FileUpload
           applicationId={applicationId}
           documentType="supporting_document"
-          label="Upload Supporting Documents"
+          label="Upload Supporting Documents (Optional)"
           onUploadComplete={(url, name) => {
             toast.success('Document uploaded', {
               description: name
             });
           }}
         />
-      )}
-
-      {!applicationId && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground text-center">
-              Save as draft first to enable document uploads
-            </p>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="pt-6 pb-6">
+            <div className="text-center text-muted-foreground">
+              <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
+              <p className="text-sm">Preparing upload...</p>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Actions */}
-      <div className="flex gap-3 pb-8">
-        <Button
-          variant="outline"
-          onClick={handleSaveDraft}
-          disabled={saving || submitting}
-          className="flex-1"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Save as Draft
-            </>
-          )}
-        </Button>
-        
+      <div className="space-y-3 pb-8">
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground">
+            ✓ Your progress is automatically saved
+          </p>
+        </div>
+
         <Button
           onClick={handleSubmit}
           disabled={saving || submitting}
-          className="flex-1"
+          className="w-full"
+          size="lg"
         >
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Submitting...
+              Submitting Application...
             </>
           ) : (
             'Submit Application'
           )}
+        </Button>
+
+        <Button
+          variant="outline"
+          onClick={() => router.push('/applications')}
+          disabled={submitting}
+          className="w-full"
+        >
+          Save & Continue Later
         </Button>
       </div>
     </div>

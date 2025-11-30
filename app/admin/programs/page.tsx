@@ -35,6 +35,9 @@ export default function AdminProgramsPage() {
     budget: '',
     start_date: '',
     end_date: '',
+    application_start_date: '',
+    application_end_date: '',
+    eligibility_criteria: '',
     status: 'active'
   });
 
@@ -66,10 +69,17 @@ export default function AdminProgramsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.budget || !formData.start_date || !formData.end_date) {
+    if (!formData.title || !formData.budget || !formData.start_date || !formData.end_date ||
+        !formData.application_start_date || !formData.application_end_date || !formData.eligibility_criteria) {
       toast.error('Please fill in all required fields');
       return;
     }
+
+    // Convert eligibility criteria from text (line-separated) to jsonb array
+    const criteriaArray = formData.eligibility_criteria
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
 
     setSaving(true);
 
@@ -85,6 +95,9 @@ export default function AdminProgramsPage() {
             budget: parseFloat(formData.budget),
             start_date: formData.start_date,
             end_date: formData.end_date,
+            application_start_date: formData.application_start_date,
+            application_end_date: formData.application_end_date,
+            eligibility_criteria: criteriaArray,
             status: formData.status,
             updated_at: new Date().toISOString()
           })
@@ -103,6 +116,9 @@ export default function AdminProgramsPage() {
             budget: parseFloat(formData.budget),
             start_date: formData.start_date,
             end_date: formData.end_date,
+            application_start_date: formData.application_start_date,
+            application_end_date: formData.application_end_date,
+            eligibility_criteria: criteriaArray,
             status: formData.status,
             created_at: now,
             updated_at: now
@@ -142,6 +158,9 @@ export default function AdminProgramsPage() {
       budget: '',
       start_date: '',
       end_date: '',
+      application_start_date: '',
+      application_end_date: '',
+      eligibility_criteria: '',
       status: 'active'
     });
     setEditingId(null);
@@ -149,14 +168,27 @@ export default function AdminProgramsPage() {
   };
 
   const handleEdit = (program: any) => {
+    // Convert eligibility_criteria from jsonb array to text (one per line)
+    let criteriaText = '';
+    if (program.eligibility_criteria) {
+      if (Array.isArray(program.eligibility_criteria)) {
+        criteriaText = program.eligibility_criteria.join('\n');
+      } else if (typeof program.eligibility_criteria === 'object' && program.eligibility_criteria.criteria) {
+        criteriaText = program.eligibility_criteria.criteria.join('\n');
+      }
+    }
+
     setFormData({
-      title: program.title,
+      title: program.title || '',
       description: program.description || '',
-      type: program.type,
+      type: program.type || 'education',
       budget: program.budget?.toString() || '',
-      start_date: program.start_date?.split('T')[0] || '',
-      end_date: program.end_date?.split('T')[0] || '',
-      status: program.status
+      start_date: program.start_date ? program.start_date.split('T')[0] : '',
+      end_date: program.end_date ? program.end_date.split('T')[0] : '',
+      application_start_date: program.application_start_date ? program.application_start_date.split('T')[0] : '',
+      application_end_date: program.application_end_date ? program.application_end_date.split('T')[0] : '',
+      eligibility_criteria: criteriaText || '',
+      status: program.status || 'active'
     });
 
     setEditingId(program.id);
@@ -172,11 +204,18 @@ export default function AdminProgramsPage() {
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
-      toast.success('Program deleted');
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+
+      toast.success('Program deleted successfully');
       fetchPrograms();
     } catch (error: any) {
-      toast.error('Failed to delete program');
+      console.error('Failed to delete program:', error);
+      toast.error('Failed to delete program', {
+        description: error.message || 'Please check console for details'
+      });
     }
   };
 
@@ -273,12 +312,7 @@ export default function AdminProgramsPage() {
                     id="start_date"
                     type="date"
                     value={formData.start_date}
-                    onChange={(e) => {
-                      handleChange('start_date', e.target.value);
-                      if (e.target.value) {
-                        setStartDate(new Date(e.target.value));
-                      }
-                    }}
+                    onChange={(e) => handleChange('start_date', e.target.value)}
                     required
                   />
                 </div>
@@ -289,16 +323,53 @@ export default function AdminProgramsPage() {
                     id="end_date"
                     type="date"
                     value={formData.end_date}
-                    onChange={(e) => {
-                      handleChange('end_date', e.target.value);
-                      if (e.target.value) {
-                        setEndDate(new Date(e.target.value));
-                      }
-                    }}
+                    onChange={(e) => handleChange('end_date', e.target.value)}
                     min={formData.start_date}
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="application_start_date">Application Opens *</Label>
+                  <Input
+                    id="application_start_date"
+                    type="date"
+                    value={formData.application_start_date}
+                    onChange={(e) => handleChange('application_start_date', e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">When applications can start</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="application_end_date">Application Closes *</Label>
+                  <Input
+                    id="application_end_date"
+                    type="date"
+                    value={formData.application_end_date}
+                    onChange={(e) => handleChange('application_end_date', e.target.value)}
+                    min={formData.application_start_date}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Last day to apply</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="eligibility_criteria">Eligibility Criteria *</Label>
+                <Textarea
+                  id="eligibility_criteria"
+                  placeholder="Enter eligibility requirements (one per line)&#10;- Must be 18 years or older&#10;- Must be a Nigerian citizen&#10;- Must have completed secondary education"
+                  value={formData.eligibility_criteria}
+                  onChange={(e) => handleChange('eligibility_criteria', e.target.value)}
+                  rows={5}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  List requirements applicants must meet
+                </p>
               </div>
 
               <div className="space-y-2">

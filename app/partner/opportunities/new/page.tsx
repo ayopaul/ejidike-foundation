@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,24 +21,67 @@ import { toast } from 'sonner';
 
 export default function NewOpportunityPage() {
   const router = useRouter();
-  const { user } = useUserProfile();
+  const { user, profile } = useUserProfile();
   const [saving, setSaving] = useState(false);
+  const [organization, setOrganization] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    opportunity_type: 'internship',
+    type: 'internship',
     location: '',
-    duration: '',
-    deadline: '',
-    requirements: '',
-    benefits: ''
+    remote_option: false,
+    application_deadline: '',
+    application_link: '',
+    requirements: ''
   });
+
+  useEffect(() => {
+    if (profile) {
+      fetchOrganization();
+    }
+  }, [profile]);
+
+  const fetchOrganization = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('partner_organizations')
+        .select('*')
+        .eq('user_id', profile?.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching organization:', error);
+        return;
+      }
+
+      if (!data) {
+        toast.error('Please complete your organization profile first');
+        router.push('/partner/organization');
+        return;
+      }
+
+      if (data.verification_status !== 'verified') {
+        toast.error('Please wait for your organization to be verified before posting opportunities');
+        router.push('/partner/organization');
+        return;
+      }
+
+      setOrganization(data);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.title) {
-      toast.error('Please fill in all required fields');
+    if (!formData.title || !formData.application_deadline) {
+      toast.error('Please fill in all required fields (Title and Application Deadline)');
+      return;
+    }
+
+    if (!organization) {
+      toast.error('Organization not found. Please complete your profile first.');
       return;
     }
 
@@ -48,15 +91,17 @@ export default function NewOpportunityPage() {
       const { error } = await supabase
         .from('partner_opportunities')
         .insert({
-          partner_id: user?.id,
+          partner_id: organization.id,
           title: formData.title,
           description: formData.description,
-          opportunity_type: formData.opportunity_type,
+          type: formData.type,
           location: formData.location,
-          duration: formData.duration,
-          deadline: formData.deadline,
-          requirements: formData.requirements ? JSON.parse(`[${formData.requirements.split(',').map(r => `"${r.trim()}"`).join(',')}]`) : [],
-          benefits: formData.benefits ? JSON.parse(`[${formData.benefits.split(',').map(b => `"${b.trim()}"`).join(',')}]`) : [],
+          remote_option: formData.remote_option,
+          application_deadline: formData.application_deadline,
+          application_link: formData.application_link || null,
+          requirements: formData.requirements
+            ? formData.requirements.split(',').map(r => r.trim()).filter(r => r)
+            : [],
           status: 'open'
         });
 
@@ -118,9 +163,9 @@ export default function NewOpportunityPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="type">Type *</Label>
-                <Select 
-                  value={formData.opportunity_type} 
-                  onValueChange={(val) => setFormData({ ...formData, opportunity_type: val })}
+                <Select
+                  value={formData.type}
+                  onValueChange={(val) => setFormData({ ...formData, type: val })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -137,7 +182,7 @@ export default function NewOpportunityPage() {
                 <Label htmlFor="location">Location</Label>
                 <Input
                   id="location"
-                  placeholder="Lagos, Nigeria or Remote"
+                  placeholder="Lagos, Nigeria"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 />
@@ -146,24 +191,45 @@ export default function NewOpportunityPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Input
-                  id="duration"
-                  placeholder="e.g., 3 months, 6 months"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                />
+                <Label htmlFor="remote">Remote Option</Label>
+                <Select
+                  value={formData.remote_option ? 'yes' : 'no'}
+                  onValueChange={(val) => setFormData({ ...formData, remote_option: val === 'yes' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Yes - Remote/Hybrid Available</SelectItem>
+                    <SelectItem value="no">No - On-site Only</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="deadline">Application Deadline</Label>
+                <Label htmlFor="deadline">Application Deadline *</Label>
                 <Input
                   id="deadline"
                   type="date"
-                  value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  value={formData.application_deadline}
+                  onChange={(e) => setFormData({ ...formData, application_deadline: e.target.value })}
+                  required
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="application_link">Application Link (Optional)</Label>
+              <Input
+                id="application_link"
+                type="url"
+                placeholder="https://example.com/apply"
+                value={formData.application_link}
+                onChange={(e) => setFormData({ ...formData, application_link: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                External application URL (if not using the platform's built-in application system)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -177,20 +243,6 @@ export default function NewOpportunityPage() {
               />
               <p className="text-xs text-muted-foreground">
                 Separate each requirement with a comma
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="benefits">Benefits (comma-separated)</Label>
-              <Textarea
-                id="benefits"
-                placeholder="e.g., Stipend provided, Mentorship opportunities, Certificate of completion"
-                value={formData.benefits}
-                onChange={(e) => setFormData({ ...formData, benefits: e.target.value })}
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Separate each benefit with a comma
               </p>
             </div>
           </CardContent>

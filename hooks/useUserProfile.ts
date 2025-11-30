@@ -27,16 +27,31 @@ export function useUserProfile(): UseUserProfileReturn {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Order by created_at to get the newest profile first
+      // (in case there are duplicate profiles)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (error) throw error;
 
-      setProfile(data);
-      setRole(data.role);
+      if (!data || data.length === 0) {
+        throw new Error('Profile not found');
+      }
+
+      // Take the first (newest) profile if multiple exist
+      const profileData = data[0];
+
+      // Warn if duplicates found
+      if (data.length > 1) {
+        console.warn(`Multiple profiles found for user ${userId}. Using the newest one.`);
+      }
+
+      setProfile(profileData);
+      setRole(profileData.role);
       setError(null);
     } catch (err) {
       console.error('Error fetching profile:', err);

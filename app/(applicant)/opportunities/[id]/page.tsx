@@ -1,6 +1,6 @@
 /**
- * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/internships/[id]/page.tsx
- * PURPOSE: View details of a specific internship opportunity
+ * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/opportunities/[id]/page.tsx
+ * PURPOSE: View details of a specific opportunity (internship, apprenticeship, volunteer)
  */
 
 'use client';
@@ -84,10 +84,10 @@ export default function InternshipDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground mb-4">Opportunity not found</p>
-        <Link href="/internships">
+        <Link href="/opportunities">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Internships
+            Back to Opportunities
           </Button>
         </Link>
       </div>
@@ -296,7 +296,7 @@ export default function InternshipDetailPage() {
                 Applications Closed
               </Button>
             )}
-            <Button variant="outline" onClick={() => router.push('/internships')}>
+            <Button variant="outline" onClick={() => router.push('/opportunities')}>
               Browse Other Opportunities
             </Button>
           </div>

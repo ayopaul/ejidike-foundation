@@ -10,46 +10,176 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Eye, Loader2, Users, Calendar } from 'lucide-react';
+import { Eye, Loader2, Users, Calendar, Check, X, Filter } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { createNotification } from '@/lib/notifications';
+import { sendEmail } from '@/lib/email';
+import { mentorshipRequestAcceptedEmail, mentorshipRequestRejectedEmail } from '@/lib/email-templates';
 
 export default function MentorMenteesPage() {
-  const { user } = useUserProfile();
+  const { profile } = useUserProfile();
   const [mentees, setMentees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    if (user) {
+    if (profile) {
       fetchMentees();
     }
-  }, [user]);
+  }, [profile, statusFilter]);
 
   const fetchMentees = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch mentorship matches
+      let query = supabase
         .from('mentorship_matches')
-        .select(`
-          *,
-          mentee:profiles!mentee_id (
-            full_name,
-            email,
-            avatar_url
-          )
-        `)
-        .eq('mentor_id', user?.id)
-        .order('matched_at', { ascending: false });
+        .select('*')
+        .eq('mentor_id', profile?.id);
+
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data: matches, error } = await query
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMentees(data || []);
+
+      // Fetch mentee profiles separately
+      if (matches && matches.length > 0) {
+        const menteeIds = matches.map(m => m.mentee_id);
+        const { data: menteeProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url')
+          .in('id', menteeIds);
+
+        // Combine matches with mentee data
+        const menteesMap = new Map(menteeProfiles?.map(m => [m.id, m]) || []);
+        const combinedData = matches.map(match => ({
+          ...match,
+          mentee: menteesMap.get(match.mentee_id)
+        }));
+
+        setMentees(combinedData);
+      } else {
+        setMentees([]);
+      }
     } catch (error: any) {
       console.error('Error fetching mentees:', error);
       toast.error('Failed to load mentees');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async (match: any) => {
+    try {
+      // Update match status to active
+      const { error } = await supabase
+        .from('mentorship_matches')
+        .update({ status: 'active' })
+        .eq('id', match.id);
+
+      if (error) throw error;
+
+      // Send in-app notification to mentee
+      try {
+        await createNotification({
+          userId: match.mentee_id,
+          title: 'Mentorship Request Accepted',
+          message: `${profile?.full_name} has accepted your mentorship request!`,
+          type: 'success',
+          link: '/mentorship'
+        });
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
+
+      // Send email to mentee
+      try {
+        const email = mentorshipRequestAcceptedEmail({
+          menteeName: match.mentee?.full_name || 'Mentee',
+          mentorName: profile?.full_name || 'Mentor',
+          mentorEmail: profile?.email || ''
+        });
+
+        await sendEmail({
+          to: match.mentee?.email || '',
+          toName: match.mentee?.full_name,
+          subject: email.subject,
+          html: email.html,
+          text: email.text
+        });
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+      }
+
+      toast.success('Mentorship request accepted');
+      fetchMentees();
+    } catch (error: any) {
+      console.error('Error accepting request:', error);
+      toast.error('Failed to accept request');
+    }
+  };
+
+  const handleRejectRequest = async (match: any) => {
+    try {
+      // Update match status to rejected
+      const { error } = await supabase
+        .from('mentorship_matches')
+        .update({ status: 'rejected' })
+        .eq('id', match.id);
+
+      if (error) throw error;
+
+      // Send in-app notification to mentee
+      try {
+        await createNotification({
+          userId: match.mentee_id,
+          title: 'Mentorship Request Update',
+          message: `${profile?.full_name} is unable to accept your mentorship request at this time`,
+          type: 'info',
+          link: '/mentorship'
+        });
+      } catch (notifError) {
+        console.error('Error sending notification:', notifError);
+      }
+
+      // Send email to mentee
+      try {
+        const email = mentorshipRequestRejectedEmail({
+          menteeName: match.mentee?.full_name || 'Mentee',
+          mentorName: profile?.full_name || 'Mentor'
+        });
+
+        await sendEmail({
+          to: match.mentee?.email || '',
+          toName: match.mentee?.full_name,
+          subject: email.subject,
+          html: email.html,
+          text: email.text
+        });
+      } catch (emailError) {
+        console.error('Error sending email:', emailError);
+      }
+
+      toast.success('Mentorship request declined');
+      fetchMentees();
+    } catch (error: any) {
+      console.error('Error rejecting request:', error);
+      toast.error('Failed to decline request');
     }
   };
 
@@ -63,9 +193,26 @@ export default function MentorMenteesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">My Mentees</h1>
-        <p className="text-muted-foreground">View and manage your mentees</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">My Mentees</h1>
+          <p className="text-muted-foreground">View and manage your mentees</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="withdrawn">Withdrawn</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {mentees.length === 0 ? (
@@ -98,17 +245,39 @@ export default function MentorMenteesPage() {
                   </Badge>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Calendar className="h-3 w-3 mr-1" />
-                    Since {formatDate(match.matched_at)}
+                    Since {formatDate(match.start_date || match.created_at)}
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <Link href={`/mentor/mentees/${match.id}`}>
-                  <Button variant="outline" className="w-full">
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
-                </Link>
+                {match.status === 'pending' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleAcceptRequest(match)}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => handleRejectRequest(match)}
+                      variant="outline"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                ) : (
+                  <Link href={`/mentor/mentees/${match.id}`}>
+                    <Button variant="outline" className="w-full" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
           ))}

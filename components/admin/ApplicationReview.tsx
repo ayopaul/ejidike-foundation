@@ -25,6 +25,7 @@ import {
 import { CheckCircle2, XCircle, MessageSquare, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { createNotification } from '@/lib/notifications';
 
 interface ApplicationReviewProps {
   applicationId: string;
@@ -52,6 +53,16 @@ export default function ApplicationReview({
     setProcessing(true);
 
     try {
+      // Get application details with applicant info
+      const { data: application, error: fetchError } = await supabase
+        .from('applications')
+        .select('*, applicant:profiles!applicant_id(id, email, full_name)')
+        .eq('id', applicationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update application status
       const { error } = await supabase
         .from('applications')
         .update({
@@ -62,6 +73,48 @@ export default function ApplicationReview({
         .eq('id', applicationId);
 
       if (error) throw error;
+
+      // Send in-app notification
+      try {
+        await createNotification({
+          userId: application.applicant.id,
+          title: 'Application Approved!',
+          message: `Congratulations! Your application for "${programTitle}" has been approved. ${reviewerNotes}`,
+          type: 'success',
+          link: `/applications/${applicationId}`,
+          metadata: {
+            applicationId,
+            programTitle,
+            status: 'approved'
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      // Send email notification
+      try {
+        const { sendEmail } = await import('@/lib/email');
+        const { applicationApprovedEmail } = await import('@/lib/email-templates');
+
+        const emailContent = applicationApprovedEmail({
+          applicantName: application.applicant.full_name,
+          programTitle,
+          reviewerNotes,
+          applicationId
+        });
+
+        await sendEmail({
+          to: application.applicant.email,
+          toName: application.applicant.full_name,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't fail if email fails
+      }
 
       toast.success('Application approved', {
         description: `${applicantName}'s application for ${programTitle} has been approved`
@@ -90,6 +143,16 @@ export default function ApplicationReview({
     setProcessing(true);
 
     try {
+      // Get application details with applicant info
+      const { data: application, error: fetchError } = await supabase
+        .from('applications')
+        .select('*, applicant:profiles!applicant_id(id, email, full_name)')
+        .eq('id', applicationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update application status
       const { error } = await supabase
         .from('applications')
         .update({
@@ -100,6 +163,48 @@ export default function ApplicationReview({
         .eq('id', applicationId);
 
       if (error) throw error;
+
+      // Send in-app notification
+      try {
+        await createNotification({
+          userId: application.applicant.id,
+          title: 'Application Update',
+          message: `Your application for "${programTitle}" has been reviewed. ${reviewerNotes}`,
+          type: 'error',
+          link: `/applications/${applicationId}`,
+          metadata: {
+            applicationId,
+            programTitle,
+            status: 'rejected'
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      // Send email notification
+      try {
+        const { sendEmail } = await import('@/lib/email');
+        const { applicationRejectedEmail } = await import('@/lib/email-templates');
+
+        const emailContent = applicationRejectedEmail({
+          applicantName: application.applicant.full_name,
+          programTitle,
+          reviewerNotes,
+          applicationId
+        });
+
+        await sendEmail({
+          to: application.applicant.email,
+          toName: application.applicant.full_name,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't fail if email fails
+      }
 
       toast.success('Application rejected', {
         description: `${applicantName}'s application has been rejected`
@@ -128,6 +233,16 @@ export default function ApplicationReview({
     setProcessing(true);
 
     try {
+      // Get application details with applicant info
+      const { data: application, error: fetchError } = await supabase
+        .from('applications')
+        .select('*, applicant:profiles!applicant_id(id, email, full_name)')
+        .eq('id', applicationId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update application status
       const { error } = await supabase
         .from('applications')
         .update({
@@ -138,6 +253,48 @@ export default function ApplicationReview({
         .eq('id', applicationId);
 
       if (error) throw error;
+
+      // Send in-app notification
+      try {
+        await createNotification({
+          userId: application.applicant.id,
+          title: 'Additional Information Required',
+          message: `We need more information for your "${programTitle}" application. ${reviewerNotes}`,
+          type: 'warning',
+          link: `/applications/${applicationId}`,
+          metadata: {
+            applicationId,
+            programTitle,
+            status: 'pending'
+          }
+        });
+      } catch (notifError) {
+        console.error('Failed to create notification:', notifError);
+      }
+
+      // Send email notification
+      try {
+        const { sendEmail } = await import('@/lib/email');
+        const { moreInfoRequestedEmail } = await import('@/lib/email-templates');
+
+        const emailContent = moreInfoRequestedEmail({
+          applicantName: application.applicant.full_name,
+          programTitle,
+          reviewerNotes,
+          applicationId
+        });
+
+        await sendEmail({
+          to: application.applicant.email,
+          toName: application.applicant.full_name,
+          subject: emailContent.subject,
+          html: emailContent.html,
+          text: emailContent.text
+        });
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't fail if email fails
+      }
 
       toast.success('Information requested', {
         description: `${applicantName} will be notified to provide additional information`

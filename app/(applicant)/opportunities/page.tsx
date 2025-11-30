@@ -1,6 +1,6 @@
 /**
- * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/internships/page.tsx
- * PURPOSE: Browse available internship opportunities
+ * FILE PATH: /ejdk/ejidike-foundation/app/(applicant)/opportunities/page.tsx
+ * PURPOSE: Browse available opportunities (internships, apprenticeships, volunteer)
  */
 
 'use client';
@@ -17,7 +17,7 @@ import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-export default function InternshipsPage() {
+export default function OpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +45,7 @@ export default function InternshipsPage() {
       setOpportunities(data || []);
     } catch (error: any) {
       console.error('Error fetching opportunities:', error);
-      toast.error('Failed to load internships', {
+      toast.error('Failed to load opportunities', {
         description: error.message
       });
     } finally {
@@ -60,7 +60,7 @@ export default function InternshipsPage() {
       opp.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.partner?.organization_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = filterType === 'all' || opp.opportunity_type === filterType;
+    const matchesType = filterType === 'all' || opp.type === filterType;
     
     return matchesSearch && matchesType;
   });
@@ -77,9 +77,9 @@ export default function InternshipsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Internship Opportunities</h1>
+        <h1 className="text-3xl font-bold">Opportunities</h1>
         <p className="text-muted-foreground mt-2">
-          Explore internships and apprenticeships from our partner organizations
+          Explore internships, apprenticeships, and volunteer opportunities from our partner organizations
         </p>
       </div>
 
@@ -88,7 +88,7 @@ export default function InternshipsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search internships..."
+            placeholder="Search opportunities..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -112,7 +112,7 @@ export default function InternshipsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No internships found</p>
+            <p className="text-muted-foreground mb-4">No opportunities found</p>
             {(searchTerm || filterType !== 'all') && (
               <Button 
                 variant="outline" 
@@ -168,16 +168,16 @@ export default function InternshipsPage() {
                     )}
                   </div>
 
-                  {opportunity.application_deadline && (
+                  {opportunity.deadline && (
                     <p className="text-xs text-muted-foreground">
-                      Deadline: {formatDate(opportunity.application_deadline)}
+                      Deadline: {formatDate(opportunity.deadline)}
                     </p>
                   )}
                 </div>
               </CardContent>
               
               <CardFooter>
-                <Link href={`/internships/${opportunity.id}`} className="w-full">
+                <Link href={`/opportunities/${opportunity.id}`} className="w-full">
                   <Button className="w-full">
                     View Details
                     <ArrowRight className="h-4 w-4 ml-2" />

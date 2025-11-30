@@ -177,6 +177,18 @@ export interface LegalDocument {
   updated_at: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+  metadata?: Record<string, any>;
+}
+
 // Unified Database type for Supabase
 export interface Database {
   public: {
@@ -245,6 +257,11 @@ export interface Database {
         Row: LegalDocument;
         Insert: Omit<LegalDocument, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<LegalDocument, 'id' | 'created_at'>>;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Omit<Notification, 'id' | 'created_at'>;
+        Update: Partial<Omit<Notification, 'id' | 'created_at'>>;
       };
     };
     Views: {
