@@ -229,7 +229,7 @@ export default function ApplicationsPage() {
               </p>
             </div>
             <Button asChild>
-              <Link href="/programs">
+              <Link href="/browse-programs">
                 <FileText className="mr-2 h-4 w-4" />
                 Browse Programs
               </Link>
@@ -249,7 +249,7 @@ export default function ApplicationsPage() {
                   You haven't submitted any applications yet
                 </p>
                 <Button asChild>
-                  <Link href="/programs">Browse Available Programs</Link>
+                  <Link href="/browse-programs">Browse Available Programs</Link>
                 </Button>
               </CardContent>
             </Card>

@@ -87,7 +87,7 @@ export default function ProgramDetailPage() {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Program not found</p>
             <Button asChild className="mt-4">
-              <Link href="/programs">Back to Programs</Link>
+              <Link href="/browse-programs">Back to Programs</Link>
             </Button>
           </div>
         </DashboardLayout>
@@ -101,7 +101,7 @@ export default function ProgramDetailPage() {
         <div className="space-y-6">
           {/* Back Button */}
           <Button variant="ghost" asChild>
-            <Link href="/programs">
+            <Link href="/browse-programs">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Programs
             </Link>

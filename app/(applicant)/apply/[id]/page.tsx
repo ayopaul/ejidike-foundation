@@ -280,7 +280,7 @@ export default function ApplyPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground mb-4">Program not found</p>
-        <Link href="/programs">
+        <Link href="/browse-programs">
           <Button variant="outline">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Programs

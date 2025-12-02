@@ -278,7 +278,7 @@ export default function ApplicantDashboard() {
                       <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No applications yet</p>
                       <Button asChild className="mt-4" size="sm">
-                        <Link href="/programs">
+                        <Link href="/browse-programs">
                           Browse Programs
                         </Link>
                       </Button>
@@ -323,7 +323,7 @@ export default function ApplicantDashboard() {
                   <div className="flex items-center justify-between">
                     <CardTitle>Available Programs</CardTitle>
                     <Button asChild size="sm">
-                      <Link href="/programs">
+                      <Link href="/browse-programs">
                         View All Programs
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
@@ -458,7 +458,7 @@ export default function ApplicantDashboard() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-4">
               <Button asChild variant="outline" className="h-auto py-4">
-                <Link href="/programs" className="flex flex-col items-center gap-2">
+                <Link href="/browse-programs" className="flex flex-col items-center gap-2">
                   <Award className="h-6 w-6" />
                   <span>Browse Programs</span>
                 </Link>

@@ -35,10 +35,11 @@ interface NavItem {
 const navigationConfig: Record<UserRole, NavItem[]> = {
   applicant: [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Programs', href: '/programs', icon: Award },
+    { title: 'Browse Programs', href: '/browse-programs', icon: Award },
     { title: 'My Applications', href: '/applications', icon: FileText },
     { title: 'Mentorship', href: '/mentorship', icon: Users },
     { title: 'Opportunities', href: '/opportunities', icon: Briefcase },
+    { title: 'My Events', href: '/my-events', icon: Calendar },
     { title: 'Profile', href: '/profile', icon: Settings },
   ],
   mentor: [
@@ -46,6 +47,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'My Mentees', href: '/mentor/mentees', icon: Users },
     { title: 'Sessions', href: '/mentor/sessions', icon: Calendar },
     { title: 'Resources', href: '/mentor/resources', icon: BookOpen },
+    { title: 'My Events', href: '/mentor/my-events', icon: Calendar },
     { title: 'FAQs', href: '/mentor/faqs', icon: HelpCircle },
     { title: 'Profile', href: '/mentor/profile', icon: Settings },
     { title: 'Support', href: '/mentor/support', icon: MessageSquare },
@@ -55,6 +57,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Organization', href: '/partner/organization', icon: Building2 },
     { title: 'Opportunities', href: '/partner/opportunities', icon: Briefcase },
     { title: 'Candidates', href: '/partner/candidates', icon: Users },
+    { title: 'My Events', href: '/partner/my-events', icon: Calendar },
     { title: 'Reports', href: '/partner/candidates/reports', icon: BarChart3 },
   ],
   admin: [
@@ -64,6 +67,8 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Mentors', href: '/admin/mentors', icon: Users },
     { title: 'Partners', href: '/admin/partners', icon: Building2 },
     { title: 'Users', href: '/admin/users', icon: UserCog },
+    { title: 'Events', href: '/admin/content/events', icon: Calendar },
+    { title: 'Contact Messages', href: '/admin/content/contact-messages', icon: MessageSquare },
     { title: 'Content', href: '/admin/content', icon: BookOpen },
   ],
 };
