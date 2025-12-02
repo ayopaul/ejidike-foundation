@@ -137,6 +137,9 @@ export default function AdminProgramsPage() {
         budget: '',
         start_date: '',
         end_date: '',
+        application_start_date: '',
+        application_end_date: '',
+        eligibility_criteria: '',
         status: 'active'
       });
       fetchPrograms();

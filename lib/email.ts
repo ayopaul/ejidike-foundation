@@ -82,12 +82,12 @@ export async function sendEmail({
     console.log('Email sent successfully:', {
       to,
       subject,
-      messageId: response.messageId
+      messageId: response.body?.messageId
     });
 
     return {
       success: true,
-      messageId: response.messageId
+      messageId: response.body?.messageId
     };
 
   } catch (error: any) {

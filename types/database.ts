@@ -28,6 +28,8 @@ export interface Program {
   budget: number;
   start_date: string;
   end_date: string;
+  application_start_date?: string;
+  application_end_date?: string;
   status: string;
   created_by?: string;
   created_at: string;
