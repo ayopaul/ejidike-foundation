@@ -16,8 +16,10 @@ import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default function AdminUserDetailPage() {
+function UserDetailContent() {
   const params = useParams();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -183,5 +185,15 @@ export default function AdminUserDetailPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function AdminUserDetailPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <UserDetailContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

@@ -16,8 +16,10 @@ import { supabase } from '@/lib/supabase';
 import { formatDate, getStatusColor } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default function AdminApplicationsPage() {
+function ApplicationsContent() {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
@@ -165,5 +167,15 @@ export default function AdminApplicationsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function AdminApplicationsPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <ApplicationsContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

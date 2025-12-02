@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { UserRole, Profile } from '@/types/database';
 import { createSupabaseClient } from '@/lib/supabase';
+import { useSidebar } from '@/contexts/SidebarContext';
 import {
   LayoutDashboard,
   FileText,
@@ -24,6 +25,7 @@ import {
   BarChart3,
   HelpCircle,
   LucideIcon,
+  X,
 } from 'lucide-react';
 
 interface NavItem {
@@ -83,6 +85,7 @@ export function Sidebar({ role, profile }: SidebarProps) {
   const navItems = navigationConfig[role];
   const supabase = createSupabaseClient();
   const [pendingMenteesCount, setPendingMenteesCount] = useState(0);
+  const { isOpen, setIsOpen } = useSidebar();
 
   // Fetch pending mentees count for mentors
   useEffect(() => {
@@ -122,9 +125,14 @@ export function Sidebar({ role, profile }: SidebarProps) {
     }
   }, [role, profile?.id]);
 
-  return (
-    <div className="flex h-full w-64 flex-col border-r bg-background">
-      <div className="p-6">
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname, setIsOpen]);
+
+  const sidebarContent = (
+    <>
+      <div className="flex items-center justify-between p-6">
         <Link href="/" className="flex items-center">
           <img
             src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/organization-logos/Ejidike%20foudnation%20logo.png"
@@ -132,8 +140,17 @@ export function Sidebar({ role, profile }: SidebarProps) {
             className="h-12 w-auto object-contain"
           />
         </Link>
+        {/* Close button - only visible on mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={() => setIsOpen(false)}
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </div>
-      
+
       <ScrollArea className="flex-1 px-3">
         <nav className="space-y-1">
           {navItems.map((item) => {
@@ -166,6 +183,36 @@ export function Sidebar({ role, profile }: SidebarProps) {
           })}
         </nav>
       </ScrollArea>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar - always visible on lg+ */}
+      <div className="hidden lg:flex h-full w-64 flex-col border-r bg-background">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile Sidebar - overlay */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ease-in-out ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setIsOpen(false)}
+        />
+        {/* Sidebar panel */}
+        <div
+          className={`absolute left-0 top-0 h-full w-64 flex flex-col bg-background shadow-xl transition-transform duration-300 ease-out ${
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {sidebarContent}
+        </div>
+      </div>
+    </>
   );
 }

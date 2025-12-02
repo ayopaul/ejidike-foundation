@@ -17,8 +17,10 @@ import { ArrowLeft, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default function NewProgramPage() {
+function NewProgramContent() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -205,5 +207,15 @@ export default function NewProgramPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewProgramPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <NewProgramContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

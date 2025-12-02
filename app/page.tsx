@@ -39,7 +39,7 @@ export default function HomePage() {
           {/* Right column - Hero image */}
           <div className="relative">
             <Image
-              src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/hero%20image.png"
+              src="/images/imgs/hero image.webp"
               alt="Young professional smiling"
               width={600}
               height={750}
@@ -51,11 +51,19 @@ export default function HomePage() {
       </section>
 
       {/* ===== FROM AMBITION TO ACTION (Dark Section) ===== */}
-      <section className="relative w-full overflow-hidden bg-[#002039] py-20 lg:py-24">
+      <section
+        className="relative w-full overflow-hidden bg-[#002039] py-20 lg:py-24"
+        style={{
+          backgroundImage: "url('/images/imgs/from-ambition-to-action-BG.webp')",
+          backgroundSize: "contain",
+          backgroundPosition: "center",
+          backgroundRepeat: "repeat",
+        }}
+      >
         {/* Decorative pattern - top left (squiggly line) */}
-        <div className="absolute left-8 top-8 lg:left-16 lg:top-12">
+        <div className="absolute left-0 top-0">
           <Image
-            src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/eLearning-Shape-4.webp-min.png"
+            src="/images/imgs/letmuc7xj68bx9rcq1ng.webp"
             alt=""
             width={50}
             height={50}
@@ -64,9 +72,9 @@ export default function HomePage() {
         </div>
 
         {/* Decorative pattern - bottom left (small dots grid) */}
-        <div className="absolute bottom-16 left-4 lg:bottom-24 lg:left-8">
+        <div className="absolute bottom-0 left-0">
           <Image
-            src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/eLearning-Shape-5.webp-min.png"
+            src="/images/imgs/qkfoompsadmvh1v7guqa.webp"
             alt=""
             width={60}
             height={60}
@@ -75,20 +83,20 @@ export default function HomePage() {
         </div>
 
         {/* Decorative pattern - top right (large dots grid) */}
-        <div className="absolute right-4 top-4 lg:right-8 lg:top-8">
+        <div className="absolute right-0 top-0">
           <Image
-            src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/eLearning-Shape-6.webp-min.png"
+            src="/images/imgs/gptxjsi2ddqrnbi0tt41.webp"
             alt=""
-            width={70}
-            height={70}
-            className="h-auto w-12 opacity-30 lg:w-16"
+            width={120}
+            height={120}
+            className="h-auto w-20 opacity-30 lg:w-28"
           />
         </div>
 
         {/* Decorative pattern - bottom right (squiggly line) */}
-        <div className="absolute bottom-8 right-8 lg:bottom-12 lg:right-16">
+        <div className="absolute bottom-0 right-0">
           <Image
-            src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/eLearning-Shape-4.webp-min.png"
+            src="/images/imgs/letmuc7xj68bx9rcq1ng.webp"
             alt=""
             width={50}
             height={50}
@@ -106,7 +114,7 @@ export default function HomePage() {
             <article className="text-center text-white">
               <div className="mb-6 flex justify-center">
                 <Image
-                  src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/Education-grants-icon-min.png"
+                  src="/images/icons/Education-grants-icon.webp"
                   alt="Education Grants"
                   width={80}
                   height={80}
@@ -123,7 +131,7 @@ export default function HomePage() {
             <article className="text-center text-white">
               <div className="mb-6 flex justify-center">
                 <Image
-                  src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/Business-grants-icon-min.png"
+                  src="/images/icons/Business-grants-icon.webp"
                   alt="Business Grants"
                   width={80}
                   height={80}
@@ -140,7 +148,7 @@ export default function HomePage() {
             <article className="text-center text-white">
               <div className="mb-6 flex justify-center">
                 <Image
-                  src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/Mentorship-network-icon-min.png"
+                  src="/images/icons/Mentorship-network-icon.webp"
                   alt="Mentorship Network"
                   width={80}
                   height={80}
@@ -157,12 +165,23 @@ export default function HomePage() {
       </section>
 
       {/* ===== WE BACK THE NEXT GENERATION ===== */}
-      <section className="w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24">
-        <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-2 lg:items-center">
+      <section className="relative w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
+        {/* Bottom right illustration */}
+        <div className="absolute bottom-0 right-0">
+          <Image
+            src="/images/imgs/webackthenextgenerationbottomright.webp"
+            alt=""
+            width={150}
+            height={150}
+            className="h-auto w-24 lg:w-36"
+          />
+        </div>
+
+        <div className="relative mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-2 lg:items-center">
           {/* Left - Image */}
           <div className="relative">
             <Image
-              src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/penultimate-section-image-min.png"
+              src="/images/imgs/We back the next generation of.webp"
               alt="Young Nigerian leaders and creators"
               width={600}
               height={600}
@@ -191,7 +210,7 @@ export default function HomePage() {
           {/* Left - Image */}
           <div className="relative">
             <Image
-              src="https://njafmfnkhzcpxzhwskpy.supabase.co/storage/v1/object/public/website%20images/dont-know-where-to-start.png"
+              src="/images/imgs/dont-know-where-to-start.webp"
               alt="Don't know how to start?"
               width={600}
               height={450}

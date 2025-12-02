@@ -14,6 +14,9 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
 
       <SiteHeader />
 
+      {/* Spacer for fixed header (yellow strip ~44px + nav ~88px) */}
+      <div className="h-[132px]" />
+
       <main>{children}</main>
 
       <SiteFooter />

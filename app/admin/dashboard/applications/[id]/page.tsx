@@ -17,8 +17,10 @@ import { formatDate, getStatusColor } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import ApplicationReview from '@/components/admin/ApplicationReview';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
-export default function AdminApplicationDetailPage() {
+function ApplicationDetailContent() {
   const params = useParams();
   const router = useRouter();
   const [application, setApplication] = useState<any>(null);
@@ -322,5 +324,15 @@ export default function AdminApplicationDetailPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function AdminApplicationDetailPage() {
+  return (
+    <ProtectedRoute allowedRoles={['admin']}>
+      <DashboardLayout>
+        <ApplicationDetailContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

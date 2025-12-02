@@ -4,6 +4,8 @@
 import { useState, useEffect } from "react";
 import { createSupabaseClient } from "@/lib/supabase";
 import { format } from "date-fns";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface ContactMessage {
   id: string;
@@ -14,7 +16,7 @@ interface ContactMessage {
   created_at: string;
 }
 
-export default function ContactMessagesPage() {
+function ContactMessagesContent() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -221,5 +223,15 @@ export default function ContactMessagesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ContactMessagesPage() {
+  return (
+    <ProtectedRoute allowedRoles={["admin"]}>
+      <DashboardLayout>
+        <ContactMessagesContent />
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

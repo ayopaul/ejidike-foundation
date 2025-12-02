@@ -15,7 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Bell, LogOut, User, X, CheckCheck } from 'lucide-react';
+import { Bell, LogOut, User, X, CheckCheck, Menu } from 'lucide-react';
+import { useSidebar } from '@/contexts/SidebarContext';
 import { toast } from 'sonner';
 import { Notification } from '@/types/database';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,6 +29,7 @@ export function Header() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const { toggle } = useSidebar();
 
   const handleSignOut = async () => {
     try {
@@ -197,6 +199,16 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b bg-background">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
+          {/* Hamburger menu - only visible on mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={toggle}
+            aria-label="Toggle navigation menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           <h1 className="text-lg font-semibold capitalize">
             {role ? `${role} Portal` : 'Dashboard'}
           </h1>

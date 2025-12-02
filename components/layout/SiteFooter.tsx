@@ -3,23 +3,25 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 w-full bg-dark text-slate-100">
+    <footer className="w-full bg-[#002039] text-slate-100">
       <div className="mx-auto grid max-w-container gap-10 px-6 pb-8 pt-10 lg:grid-cols-[1.1fr,1.4fr] lg:px-12">
         {/* Brand block */}
         <div>
-          <div className="flex flex-col gap-[2px]">
-            <span className="text-lg font-semibold tracking-[0.16em] uppercase">
-              Ejidike
-            </span>
-            <span className="text-[10px] font-medium uppercase tracking-[0.28em] text-slate-400">
-              education foundation
-            </span>
-          </div>
+          <Link href="/">
+            <Image
+              src="/images/logos/Footer logo.webp"
+              alt="Ejidike Foundation"
+              width={150}
+              height={60}
+              className="h-auto w-36 object-contain"
+            />
+          </Link>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-            Empowering Nigeria’s youth with access to education, funding, and
+            Empowering Nigeria's youth with access to education, funding, and
             mentorship.
           </p>
         </div>
