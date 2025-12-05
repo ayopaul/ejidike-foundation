@@ -1,9 +1,35 @@
 // components/layout/SiteLayout.tsx
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@/types/database";
 
 export function SiteLayout({ children }: { children: React.ReactNode }) {
+  const [hasAnnouncement, setHasAnnouncement] = useState(true); // Default to true to prevent layout shift
+
+  // Check if there's an active announcement
+  useEffect(() => {
+    const checkAnnouncement = async () => {
+      try {
+        const supabase = createClientComponentClient<Database>();
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("id")
+          .eq("is_active", true)
+          .limit(1);
+
+        setHasAnnouncement(!error && data && data.length > 0);
+      } catch {
+        setHasAnnouncement(false);
+      }
+    };
+
+    checkAnnouncement();
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-surface-cream font-poppins text-text-primary">
       {/* Background blobs */}
@@ -14,8 +40,8 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
 
       <SiteHeader />
 
-      {/* Spacer for fixed header (yellow strip ~44px + nav ~88px) */}
-      <div className="h-[132px]" />
+      {/* Spacer for fixed header (announcement bar ~44px + nav ~88px) */}
+      <div className={hasAnnouncement ? "h-[132px]" : "h-[88px]"} />
 
       <main>{children}</main>
 

@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '@supabase/supabase-js';
-import { createSupabaseClient } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Profile, UserRole } from '@/types/database';
+import type { Database } from '@/types/database';
 
 interface AuthContextType {
   user: User | null;
@@ -16,29 +17,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create a single supabase instance
+const supabase = createClientComponentClient<Database>();
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const initializedRef = useRef(false);
-
-  const supabase = createSupabaseClient();
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
 
       if (!data || data.length === 0) {
-        throw new Error('Profile not found');
+        console.warn('Profile not found for user:', userId);
+        return;
       }
 
       const profileData = data[0];
@@ -58,50 +60,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Prevent double initialization in React Strict Mode
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
     let mounted = true;
 
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session }, error: sessionError }) => {
+      if (!mounted) return;
 
-        if (!mounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          await fetchProfile(session.user.id);
-        }
-      } catch (err) {
-        console.error('Error getting session:', err);
-        if (mounted) setError(err as Error);
-      } finally {
-        if (mounted) setLoading(false);
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        setLoading(false);
+        return;
       }
-    };
 
-    getInitialSession();
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+      }
+
+      setLoading(false);
+    }).catch((err) => {
+      console.error('Error getting session:', err);
+      if (mounted) {
+        setError(err as Error);
+        setLoading(false);
+      }
+    });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
 
-        // Only process actual auth changes, not token refreshes
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-          setUser(session?.user ?? null);
-
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
+            setUser(session.user);
             await fetchProfile(session.user.id);
-          } else {
-            setProfile(null);
-            setRole(null);
           }
-
-          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setRole(null);
         }
+
+        setLoading(false);
       }
     );
 

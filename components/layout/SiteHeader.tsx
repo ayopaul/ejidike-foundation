@@ -4,6 +4,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useAuth } from "@/contexts/AuthContext";
+import type { Announcement, Database } from "@/types/database";
 
 type NavItem = {
   href: string;
@@ -37,20 +40,69 @@ const navItems: NavItem[] = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const { user, profile, role, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
 
-  // Handle scroll behavior - show header when scrolling up, hide when scrolling down
+  // Get the dashboard URL based on user role
+  const getDashboardUrl = () => {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'mentor':
+        return '/mentor/dashboard';
+      case 'partner':
+        return '/partner/dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
+
+  // Fetch the latest active announcement that hasn't expired
+  useEffect(() => {
+    const fetchAnnouncement = async () => {
+      try {
+        const supabase = createClientComponentClient<Database>();
+        const now = new Date().toISOString();
+
+        // Get the most recent active announcement
+        const { data, error } = await supabase
+          .from("announcements")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          // Filter out expired announcements
+          const validAnnouncement = data.find((ann: Announcement) => {
+            if (!ann.expires_at) return true; // No expiry = always valid
+            return new Date(ann.expires_at) > new Date(now);
+          });
+
+          if (validAnnouncement) {
+            setAnnouncement(validAnnouncement as Announcement);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch announcement:", err);
+      }
+    };
+
+    fetchAnnouncement();
+  }, []);
+
+  // Handle scroll behavior - only show header at top of page
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Check if at top of page
-      setIsAtTop(currentScrollY < 10);
+      // Check if at top of page (within 10px)
+      const atTop = currentScrollY < 10;
+      setIsAtTop(atTop);
 
       // Don't hide header if mobile menu is open
       if (mobileMenuOpen) {
@@ -58,20 +110,13 @@ export function SiteHeader() {
         return;
       }
 
-      // Show header when scrolling up or at top
-      if (currentScrollY < lastScrollY || currentScrollY < 100) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Hide header when scrolling down (after 100px)
-        setIsVisible(false);
-      }
-
-      setLastScrollY(currentScrollY);
+      // Only show header when at top of page
+      setIsVisible(atTop);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -85,26 +130,56 @@ export function SiteHeader() {
         isVisible ? "translate-y-0" : "-translate-y-full"
       } ${!isAtTop ? "shadow-md" : ""}`}
     >
-      {/* Top strip */}
-      <div className="flex w-full items-center justify-center bg-[#FFCF4C] px-4 py-3 text-xs font-medium text-black sm:text-sm">
-        Applications for 2025/2026 Grant Cycle now open
-      </div>
+      {/* Top strip - Dynamic announcement with marquee for long text */}
+      {announcement && (
+        <div className="w-full bg-[#FFCF4C] py-3 text-xs font-medium text-black sm:text-sm overflow-hidden">
+          <div className="announcement-marquee whitespace-nowrap">
+            <span className="inline-block px-4">{announcement.message}</span>
+          </div>
+          <style jsx>{`
+            .announcement-marquee {
+              display: inline-block;
+              animation: marquee 20s linear infinite;
+              padding-left: 100%;
+            }
+            .announcement-marquee:hover {
+              animation-play-state: paused;
+            }
+            @keyframes marquee {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-100%);
+              }
+            }
+            @media (min-width: 640px) {
+              .announcement-marquee {
+                animation: none;
+                padding-left: 0;
+                text-align: center;
+                width: 100%;
+              }
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* Main nav */}
       <div className={`mx-auto flex max-w-container items-center justify-between px-6 py-6 lg:px-12 transition-colors duration-300 ${
         !isAtTop ? "bg-white/95 backdrop-blur-sm" : "bg-transparent"
       }`}>
-        {/* Logo + nav links */}
-        <div className="flex items-center gap-10">
-          <Link href="/" className="flex items-center">
-            <img
-              src="/images/logos/logo.webp"
-              alt="Ejidike Foundation"
-              className="h-12 w-auto object-contain"
-            />
-          </Link>
+        {/* Logo */}
+        <Link href="/" className="flex items-center">
+          <img
+            src="/images/logos/logo.webp"
+            alt="Ejidike Foundation"
+            className="h-12 w-auto object-contain"
+          />
+        </Link>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-text-secondary lg:flex">
+        {/* Centered nav links */}
+        <nav className="hidden items-center justify-center gap-6 text-sm font-medium text-text-secondary lg:flex absolute left-1/2 transform -translate-x-1/2">
             {navItems.map((item) => {
               const active =
                 item.href === "/"
@@ -188,7 +263,6 @@ export function SiteHeader() {
               );
             })}
           </nav>
-        </div>
 
         {/* Right: hamburger + login */}
         <div className="flex items-center gap-3">
@@ -231,12 +305,38 @@ export function SiteHeader() {
             )}
           </button>
 
-          <Link
-            href="/login"
-            className="rounded-[10px] border border-text-primary px-5 py-2 text-sm font-medium text-text-primary transition hover:bg-text-primary hover:text-white"
-          >
-            Log in
-          </Link>
+          {loading ? (
+            <div className="rounded-[10px] border border-text-primary px-5 py-2 text-sm font-medium text-text-primary opacity-50">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            </div>
+          ) : user && profile ? (
+            <Link
+              href={getDashboardUrl()}
+              className="flex items-center gap-2 rounded-[10px] border border-text-primary px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-text-primary hover:text-white"
+            >
+              <span className="hidden sm:inline">{profile.full_name || 'Dashboard'}</span>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-[10px] border border-text-primary px-5 py-2 text-sm font-medium text-text-primary transition hover:bg-text-primary hover:text-white"
+            >
+              Log in
+            </Link>
+          )}
         </div>
       </div>
 

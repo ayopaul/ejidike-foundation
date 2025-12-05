@@ -6,18 +6,23 @@ import type { Database } from '@/types/database';
 // Singleton instance for client-side Supabase client
 let clientInstance: ReturnType<typeof createClientComponentClient<Database>> | null = null;
 
-// Client-side Supabase client (singleton pattern)
-export const supabase = (() => {
+// Client component client (for App Router) - returns singleton
+export const createSupabaseClient = () => {
+  if (typeof window === 'undefined') {
+    // During SSR, create a new instance each time (won't persist)
+    return createClientComponentClient<Database>();
+  }
+
   if (!clientInstance) {
     clientInstance = createClientComponentClient<Database>();
   }
   return clientInstance;
-})();
-
-// Client component client (for App Router) - returns the same singleton
-export const createSupabaseClient = () => {
-  return supabase;
 };
+
+// For convenience, export a getter that creates on first access (client-side only)
+export const supabase = typeof window !== 'undefined'
+  ? createSupabaseClient()
+  : createClientComponentClient<Database>();
 
 // Server-side client (for Server Components)
 export const createServerSupabaseClient = () => {

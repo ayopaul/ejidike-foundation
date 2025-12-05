@@ -153,6 +153,7 @@ export interface Announcement {
   message: string;
   type: 'info' | 'warning' | 'success' | 'error';
   is_active: boolean;
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
 }
