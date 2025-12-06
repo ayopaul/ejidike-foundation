@@ -73,8 +73,7 @@ export default function LogSessionPage() {
       } else {
         setMatches([]);
       }
-    } catch (error: any) {
-      console.error('Error fetching matches:', error);
+    } catch {
       toast.error('Failed to load mentees');
     } finally {
       setLoading(false);
@@ -95,15 +94,7 @@ export default function LogSessionPage() {
       // Combine date and time into a single datetime
       const sessionDateTime = `${formData.session_date}T${formData.session_time}:00`;
 
-      console.log('[Session Log] Inserting session:', {
-        match_id: formData.match_id,
-        session_date: sessionDateTime,
-        duration_minutes: parseInt(formData.duration),
-        mode: formData.mode,
-        notes: formData.notes
-      });
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('mentorship_sessions')
         .insert({
           match_id: formData.match_id,
@@ -111,20 +102,15 @@ export default function LogSessionPage() {
           duration_minutes: parseInt(formData.duration),
           mode: formData.mode,
           notes: formData.notes
-        })
-        .select();
+        });
 
       if (error) {
-        console.error('[Session Log] Error:', error);
         throw error;
       }
-
-      console.log('[Session Log] Session created successfully:', data);
 
       // Get the mentee ID from the selected match
       const selectedMatch = matches.find(m => m.id === formData.match_id);
       const menteeId = selectedMatch?.mentee_id;
-      const menteeName = selectedMatch?.mentee?.full_name;
 
       // Send notification to mentee
       if (menteeId) {
@@ -136,17 +122,14 @@ export default function LogSessionPage() {
             type: 'info',
             link: '/mentorship'
           });
-          console.log('[Session Log] Notification sent to mentee');
-        } catch (notifError) {
-          console.error('[Session Log] Error sending notification:', notifError);
+        } catch {
           // Don't fail the session logging if notification fails
         }
       }
 
       toast.success('Session logged successfully');
       router.push('/mentor/sessions');
-    } catch (error: any) {
-      console.error('Error logging session:', error);
+    } catch {
       toast.error('Failed to log session');
     } finally {
       setSaving(false);

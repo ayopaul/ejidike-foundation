@@ -196,7 +196,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background">
+    <header className="sticky top-0 z-40 border-b" style={{ backgroundColor: '#F2E8DF' }}>
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center gap-4">
           {/* Hamburger menu - only visible on mobile */}

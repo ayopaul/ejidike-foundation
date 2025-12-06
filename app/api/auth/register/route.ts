@@ -93,15 +93,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      console.error('Auth signup error:', authError);
-      
       if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
         return NextResponse.json(
           { error: 'Email already registered' },
           { status: 400 }
         );
       }
-      
+
       return NextResponse.json(
         { error: authError.message },
         { status: 500 }
@@ -117,9 +115,6 @@ export async function POST(request: NextRequest) {
 
     // Create or update profile using admin client (bypasses RLS)
     // Use upsert in case a database trigger already created the profile
-    console.log('Attempting to create/update profile for user:', authData.user.id);
-    console.log('Profile data:', { user_id: authData.user.id, email, full_name, role });
-
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
@@ -135,16 +130,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('========== PROFILE CREATION ERROR ==========');
-      console.error('Error code:', profileError.code);
-      console.error('Error message:', profileError.message);
-      console.error('Error details:', profileError.details);
-      console.error('Error hint:', profileError.hint);
-      console.error('Full error:', JSON.stringify(profileError, null, 2));
-      console.error('===========================================');
-
       // If profile creation fails, delete the auth user
-      console.log('Deleting auth user due to profile creation failure...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
 
       return NextResponse.json(
@@ -158,8 +144,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Profile created successfully:', profileData);
-
     return NextResponse.json({
       success: true,
       message: 'Registration successful. You can now login.',
@@ -169,7 +153,6 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Register API error:', error);
     return NextResponse.json(
       { error: error.message || 'Registration failed' },
       { status: 500 }

@@ -28,8 +28,6 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('[Notifications API] Creating notification for user:', userId);
-
     // Create notification using service role (bypasses RLS)
     const { data, error } = await supabase
       .from('notifications')
@@ -46,18 +44,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('[Notifications API] Error:', error);
       throw error;
     }
-
-    console.log('[Notifications API] Notification created successfully:', data.id);
 
     return NextResponse.json({
       success: true,
       notification: data
     });
   } catch (error: any) {
-    console.error('[Notifications API] Failed to create notification:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to create notification' },
       { status: 500 }

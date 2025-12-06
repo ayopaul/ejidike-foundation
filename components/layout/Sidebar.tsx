@@ -39,7 +39,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Browse Programs', href: '/browse-programs', icon: Award },
     { title: 'My Applications', href: '/applications', icon: FileText },
-    { title: 'Mentorship', href: '/mentorship', icon: Users },
+    { title: 'Mentorship', href: '/dashboard/mentorship', icon: Users },
     { title: 'Opportunities', href: '/opportunities', icon: Briefcase },
     { title: 'My Events', href: '/my-events', icon: Calendar },
     { title: 'Profile', href: '/profile', icon: Settings },
@@ -66,7 +66,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { title: 'Applications', href: '/admin/applications', icon: FileText },
     { title: 'Programs', href: '/admin/programs', icon: Award },
-    { title: 'Mentors', href: '/admin/mentors', icon: Users },
+    { title: 'Mentorship', href: '/admin/mentors', icon: Users },
     { title: 'Partners', href: '/admin/partners', icon: Building2 },
     { title: 'Users', href: '/admin/users', icon: UserCog },
     { title: 'Events', href: '/admin/content/events', icon: Calendar },
@@ -189,7 +189,7 @@ export function Sidebar({ role, profile }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar - always visible on lg+ */}
-      <div className="hidden lg:flex h-full w-64 flex-col border-r bg-background">
+      <div className="hidden lg:flex h-full w-64 flex-col border-r" style={{ backgroundColor: '#F2E8DF' }}>
         {sidebarContent}
       </div>
 
@@ -206,9 +206,10 @@ export function Sidebar({ role, profile }: SidebarProps) {
         />
         {/* Sidebar panel */}
         <div
-          className={`absolute left-0 top-0 h-full w-64 flex flex-col bg-background shadow-xl transition-transform duration-300 ease-out ${
+          className={`absolute left-0 top-0 h-full w-64 flex flex-col shadow-xl transition-transform duration-300 ease-out ${
             isOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
+          style={{ backgroundColor: '#F2E8DF' }}
         >
           {sidebarContent}
         </div>

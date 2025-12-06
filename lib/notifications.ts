@@ -21,8 +21,6 @@ export interface CreateNotificationParams {
  * Uses server-side API to bypass RLS issues
  */
 export async function createNotification(params: CreateNotificationParams) {
-  console.log('[Notification] Creating notification for user:', params.userId);
-
   try {
     const response = await fetch('/api/notifications/create', {
       method: 'POST',
@@ -45,7 +43,6 @@ export async function createNotification(params: CreateNotificationParams) {
     }
 
     const result = await response.json();
-    console.log('[Notification] Created successfully:', result.notification);
     return result.notification;
   } catch (error: any) {
     console.error('[Notification] Error creating notification:', error);

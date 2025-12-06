@@ -70,8 +70,8 @@ export default function MentorProfilePage() {
         // Clear input since tags will be shown as badges
         setExpertiseInput('');
       }
-    } catch (error: any) {
-      console.error('Error fetching mentor profile:', error);
+    } catch {
+      // Profile fetch failed silently
     } finally {
       setLoading(false);
     }
@@ -87,8 +87,6 @@ export default function MentorProfilePage() {
     setSaving(true);
 
     try {
-      console.log('Saving profile...', { profile, mentorProfile, userInfo });
-
       // Update user profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -99,14 +97,11 @@ export default function MentorProfilePage() {
         .eq('id', profile?.id);
 
       if (profileError) {
-        console.error('Profile update error:', profileError);
         throw profileError;
       }
 
-      console.log('Profile updated, now updating mentor profile...');
-
       // Update mentor profile
-      const { data: mentorData, error: mentorError } = await supabase
+      const { error: mentorError } = await supabase
         .from('mentor_profiles')
         .upsert({
           user_id: profile?.id,
@@ -115,18 +110,14 @@ export default function MentorProfilePage() {
           years_of_experience: mentorProfile.years_of_experience,
           max_mentees: mentorProfile.max_mentees,
           availability_status: mentorProfile.availability_status
-        })
-        .select();
+        });
 
       if (mentorError) {
-        console.error('Mentor profile update error:', mentorError);
         throw mentorError;
       }
 
-      console.log('Mentor profile updated:', mentorData);
       toast.success('Profile updated successfully');
     } catch (error: any) {
-      console.error('Error saving profile:', error);
       toast.error('Failed to update profile', {
         description: error.message || 'Please try again'
       });

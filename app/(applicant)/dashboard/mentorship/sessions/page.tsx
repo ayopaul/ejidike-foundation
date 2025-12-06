@@ -1,12 +1,10 @@
-// appl/(applicant)/dashboard/mentorship/sessions/page.tsx
+// app/(applicant)/dashboard/mentorship/sessions/page.tsx
 
 'use client';
 
 import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,14 +59,7 @@ export default function MentorshipSessionsPage() {
       // Get active mentorship match
       const { data: match } = await supabase
         .from('mentorship_matches')
-        .select(`
-          id,
-          mentor_id,
-          profiles!mentorship_matches_mentor_id_fkey (
-            full_name,
-            email
-          )
-        `)
+        .select('id, mentor_id')
         .eq('mentee_id', profile?.id)
         .eq('status', 'active')
         .maybeSingle();
@@ -78,7 +69,14 @@ export default function MentorshipSessionsPage() {
         return;
       }
 
-      setMentorshipMatch(match);
+      // Fetch mentor profile separately
+      const { data: mentorProfile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', match.mentor_id)
+        .single();
+
+      setMentorshipMatch({ ...match, mentor: mentorProfile });
 
       // Fetch all sessions for this match
       const { data: sessionsData, error } = await supabase
@@ -165,69 +163,59 @@ export default function MentorshipSessionsPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={['applicant']}>
-        <DashboardLayout>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   // No active mentorship
   if (!mentorshipMatch) {
     return (
-      <ProtectedRoute allowedRoles={['applicant']}>
-        <DashboardLayout>
-          <div className="space-y-6">
-            <div>
-              <Button asChild variant="ghost" className="mb-4">
-                <Link href="/dashboard/mentorship">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Mentorship
-                </Link>
-              </Button>
-              <h2 className="text-3xl font-bold tracking-tight">Mentorship Sessions</h2>
-            </div>
+      <div className="space-y-6">
+        <div>
+          <Button asChild variant="ghost" className="mb-4">
+            <Link href="/dashboard/mentorship">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Mentorship
+            </Link>
+          </Button>
+          <h2 className="text-3xl font-bold tracking-tight">Mentorship Sessions</h2>
+        </div>
 
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <Calendar className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Active Mentorship</h3>
-                <p className="text-muted-foreground mb-6 max-w-md">
-                  You need an active mentor to view sessions. Request a mentor to get started.
-                </p>
-                <Button asChild>
-                  <Link href="/dashboard/mentorship/request">
-                    Find a Mentor
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Calendar className="h-16 w-16 text-muted-foreground opacity-50 mb-4" />
+            <h3 className="text-xl font-semibold mb-2">No Active Mentorship</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              You need an active mentor to view sessions. Request a mentor to get started.
+            </p>
+            <Button asChild>
+              <Link href="/dashboard/mentorship/request">
+                Find a Mentor
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
-        <div className="space-y-6">
-          {/* Header */}
-          <div>
-            <Button asChild variant="ghost" className="mb-4">
-              <Link href="/dashboard/mentorship">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Mentorship
-              </Link>
-            </Button>
-            <h2 className="text-3xl font-bold tracking-tight">Mentorship Sessions</h2>
-            <p className="text-muted-foreground">
-              Your session history with {mentorshipMatch.profiles?.full_name}
-            </p>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <Button asChild variant="ghost" className="mb-4">
+          <Link href="/dashboard/mentorship">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Mentorship
+          </Link>
+        </Button>
+        <h2 className="text-3xl font-bold tracking-tight">Mentorship Sessions</h2>
+        <p className="text-muted-foreground">
+          Your session history with {mentorshipMatch.mentor?.full_name}
+        </p>
+      </div>
 
           {/* Stats Cards */}
           <div className="grid gap-4 md:grid-cols-3">
@@ -415,22 +403,20 @@ export default function MentorshipSessionsPage() {
                 Contact your mentor to schedule your next mentorship session
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-4">
-              <Button asChild>
-                <a href={`mailto:${mentorshipMatch.profiles?.email}`}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Contact Mentor
-                </a>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/dashboard/mentorship">
-                  View Mentorship Details
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    </ProtectedRoute>
+          <CardContent className="flex gap-4">
+            <Button asChild>
+              <a href={`mailto:${mentorshipMatch.mentor?.email}`}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Contact Mentor
+              </a>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/mentorship">
+                View Mentorship Details
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
   );
 }

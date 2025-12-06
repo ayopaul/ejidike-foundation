@@ -79,24 +79,12 @@ export async function sendEmail({
     // Send the email
     const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-    console.log('Email sent successfully:', {
-      to,
-      subject,
-      messageId: response.body?.messageId
-    });
-
     return {
       success: true,
       messageId: response.body?.messageId
     };
 
   } catch (error: any) {
-    console.error('Brevo email error:', {
-      error: error.message,
-      to,
-      subject
-    });
-
     return {
       success: false,
       error: error.message || 'Failed to send email'

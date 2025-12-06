@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import { createSupabaseClient } from "@/lib/supabase";
+import Turnstile, { BoundTurnstileObject } from "react-turnstile";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -15,13 +16,33 @@ export default function ContactPage() {
   const [submitStatus, setSubmitStatus] = useState<"success" | "error" | null>(
     null
   );
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [boundTurnstile, setBoundTurnstile] = useState<BoundTurnstileObject | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitStatus(null);
 
+    if (!captchaToken) {
+      setSubmitStatus("error");
+      return;
+    }
+
+    setIsSubmitting(true);
+
     try {
+      // Verify captcha on the server
+      const captchaResponse = await fetch("/api/verify-captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+
+      const captchaResult = await captchaResponse.json();
+      if (!captchaResult.success) {
+        throw new Error("Captcha verification failed");
+      }
+
       const supabase = createSupabaseClient();
 
       const { error } = await supabase
@@ -32,9 +53,12 @@ export default function ContactPage() {
 
       setSubmitStatus("success");
       setFormData({ full_name: "", email: "", message: "" });
+      setCaptchaToken(null);
+      boundTurnstile?.reset();
     } catch (error) {
       console.error("Error submitting contact form:", error);
       setSubmitStatus("error");
+      boundTurnstile?.reset();
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +94,7 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <div className="rounded-card bg-surface-white/95 p-6 shadow-card">
+          <div className="bg-surface-white/95 p-6 shadow-card" style={{ borderRadius: '20px', border: '3px solid #000000' }}>
             {submitStatus === "success" && (
               <div className="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-800">
                 Thank you for contacting us! We'll get back to you soon.
@@ -123,9 +147,22 @@ export default function ContactPage() {
                   placeholder="Share your question, idea, or request..."
                 />
               </div>
+              <div className="flex justify-center">
+                <Turnstile
+                  sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || ""}
+                  onSuccess={(token: string, _preClearanceObtained: boolean, boundTurnstileObj: BoundTurnstileObject) => {
+                    setCaptchaToken(token);
+                    setBoundTurnstile(boundTurnstileObj);
+                  }}
+                  onExpire={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                  theme="light"
+                  size="normal"
+                />
+              </div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !captchaToken}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-brand-yellow px-7 py-2.5 text-sm font-medium text-text-primary shadow-btn hover:-translate-y-[1px] hover:shadow-btnHover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>{isSubmitting ? "Sending..." : "Send message"}</span>

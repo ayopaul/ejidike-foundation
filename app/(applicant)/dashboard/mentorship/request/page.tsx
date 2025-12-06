@@ -6,8 +6,6 @@ import { useEffect, useState } from 'react';
 import { createSupabaseClient } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useRouter } from 'next/navigation';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,34 +57,52 @@ export default function RequestMentorPage() {
     try {
       setLoading(true);
 
-      const { data, error } = await supabase
+      // First, get all mentor profiles that are available
+      const { data: mentorProfiles, error: mentorError } = await supabase
+        .from('mentor_profiles')
+        .select('user_id, headline, expertise_areas, bio, years_of_experience, linkedin_url, availability_status')
+        .eq('availability_status', 'available');
+
+      if (mentorError) {
+        console.error('Error fetching mentor profiles:', mentorError);
+        throw mentorError;
+      }
+
+      if (!mentorProfiles || mentorProfiles.length === 0) {
+        setMentors([]);
+        setFilteredMentors([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get the profile IDs of available mentors
+      const mentorUserIds = mentorProfiles.map(mp => mp.user_id);
+
+      // Fetch the profile details for these mentors
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          mentor_profiles (
-            expertise,
-            bio,
-            years_experience,
-            linkedin_url,
-            is_available
-          )
-        `)
+        .select('id, full_name, email')
         .eq('role', 'mentor')
-        .eq('mentor_profiles.is_available', true);
+        .in('id', mentorUserIds);
 
-      if (error) throw error;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
-      const formattedMentors = data.map((m: any) => ({
-        id: m.id,
-        full_name: m.full_name,
-        email: m.email,
-        expertise: m.mentor_profiles?.[0]?.expertise || 'General Mentorship',
-        bio: m.mentor_profiles?.[0]?.bio || '',
-        years_experience: m.mentor_profiles?.[0]?.years_experience || 0,
-        linkedin_url: m.mentor_profiles?.[0]?.linkedin_url,
-      }));
+      // Combine the data
+      const formattedMentors = (profiles || []).map((p: any) => {
+        const mentorProfile = mentorProfiles.find(mp => mp.user_id === p.id);
+        return {
+          id: p.id,
+          full_name: p.full_name,
+          email: p.email,
+          expertise: mentorProfile?.headline || mentorProfile?.expertise_areas?.join(', ') || 'General Mentorship',
+          bio: mentorProfile?.bio || '',
+          years_experience: mentorProfile?.years_of_experience || 0,
+          linkedin_url: mentorProfile?.linkedin_url,
+        };
+      });
 
       setMentors(formattedMentors);
       setFilteredMentors(formattedMentors);
@@ -138,22 +154,17 @@ export default function RequestMentorPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={['applicant']}>
-        <DashboardLayout>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
   return (
-    <ProtectedRoute allowedRoles={['applicant']}>
-      <DashboardLayout>
-        <div className="space-y-6">
-          {/* Header */}
-          <div>
+    <>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
             <Button asChild variant="ghost" className="mb-4">
               <Link href="/dashboard/mentorship">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -243,83 +254,82 @@ export default function RequestMentorPage() {
               ))}
             </div>
           )}
-        </div>
+      </div>
 
-        {/* Request Modal */}
-        {selectedMentor && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-16 w-16">
-                      <AvatarFallback className="text-lg">
-                        {selectedMentor.full_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-2xl">{selectedMentor.full_name}</CardTitle>
-                      <p className="text-muted-foreground">{selectedMentor.expertise}</p>
-                    </div>
+      {/* Request Modal */}
+      {selectedMentor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className="text-lg">
+                      {selectedMentor.full_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-2xl">{selectedMentor.full_name}</CardTitle>
+                    <p className="text-muted-foreground">{selectedMentor.expertise}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMentor(null)}
-                  >
-                    ✕
-                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h4 className="font-semibold mb-2">About</h4>
-                  <p className="text-muted-foreground">{selectedMentor.bio}</p>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedMentor(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">About</h4>
+                <p className="text-muted-foreground">{selectedMentor.bio}</p>
+              </div>
 
-                <div>
-                  <h4 className="font-semibold mb-2">Experience</h4>
-                  <p className="text-muted-foreground">
-                    {selectedMentor.years_experience} years in {selectedMentor.expertise}
-                  </p>
-                </div>
+              <div>
+                <h4 className="font-semibold mb-2">Experience</h4>
+                <p className="text-muted-foreground">
+                  {selectedMentor.years_experience} years in {selectedMentor.expertise}
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Your Goals (Optional)
-                  </label>
-                  <Textarea
-                    placeholder="What do you hope to achieve with this mentorship? (e.g., career guidance, skill development, industry insights)"
-                    value={goals}
-                    onChange={(e) => setGoals(e.target.value)}
-                    rows={4}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Sharing your goals helps your mentor prepare for your first session
-                  </p>
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Your Goals (Optional)
+                </label>
+                <Textarea
+                  placeholder="What do you hope to achieve with this mentorship? (e.g., career guidance, skill development, industry insights)"
+                  value={goals}
+                  onChange={(e) => setGoals(e.target.value)}
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sharing your goals helps your mentor prepare for your first session
+                </p>
+              </div>
 
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedMentor(null)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleRequestMentor}
-                    disabled={submitting}
-                    className="flex-1"
-                  >
-                    {submitting ? 'Sending Request...' : 'Send Request'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </DashboardLayout>
-    </ProtectedRoute>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedMentor(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleRequestMentor}
+                  disabled={submitting}
+                  className="flex-1"
+                >
+                  {submitting ? 'Sending Request...' : 'Send Request'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </>
   );
 }

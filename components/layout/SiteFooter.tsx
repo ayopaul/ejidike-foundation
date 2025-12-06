@@ -138,7 +138,7 @@ export function SiteFooter() {
               </h4>
               <ul className="space-y-1 text-sm text-slate-400">
                 <li>
-                  <Link href="#">Privacy &amp; Terms</Link>
+                  <Link href="/legal">Privacy & Terms</Link>
                 </li>
                 <li>
                   <Link href="/contact">Contact Us</Link>

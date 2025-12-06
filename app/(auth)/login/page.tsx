@@ -373,13 +373,10 @@ export default function LoginPage() {
 
       const destination = destinations[profile.role] || '/dashboard';
 
-      console.log('Redirecting to:', destination);
-
       // Hard redirect
       window.location.href = destination;
 
     } catch (err: any) {
-      console.error('Login error:', err);
       setError(err.message || 'Login failed');
       setLoading(false);
     }
