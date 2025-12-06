@@ -1,14 +1,58 @@
 // app/about/page.tsx
-import React from "react";
+"use client";
+
+import React, { useEffect, useState, useRef } from "react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function AboutPage() {
+  const [heroVisible, setHeroVisible] = useState(false);
+  const [visionVisible, setVisionVisible] = useState(false);
+  const [storyVisible, setStoryVisible] = useState(false);
+  const [leadershipVisible, setLeadershipVisible] = useState(false);
+
+  const heroRef = useRef<HTMLElement>(null);
+  const visionRef = useRef<HTMLElement>(null);
+  const storyRef = useRef<HTMLElement>(null);
+  const leadershipRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.2,
+      rootMargin: "0px",
+    };
+
+    const createObserver = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+      return new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          setter(entry.isIntersecting);
+        });
+      }, observerOptions);
+    };
+
+    const heroObserver = createObserver(setHeroVisible);
+    const visionObserver = createObserver(setVisionVisible);
+    const storyObserver = createObserver(setStoryVisible);
+    const leadershipObserver = createObserver(setLeadershipVisible);
+
+    if (heroRef.current) heroObserver.observe(heroRef.current);
+    if (visionRef.current) visionObserver.observe(visionRef.current);
+    if (storyRef.current) storyObserver.observe(storyRef.current);
+    if (leadershipRef.current) leadershipObserver.observe(leadershipRef.current);
+
+    return () => {
+      heroObserver.disconnect();
+      visionObserver.disconnect();
+      storyObserver.disconnect();
+      leadershipObserver.disconnect();
+    };
+  }, []);
+
   return (
     <SiteLayout>
       {/* ===== HERO SECTION ===== */}
-      <section className="relative w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 xl:py-24 overflow-hidden">
+      <section ref={heroRef} className="relative w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 xl:py-24 overflow-hidden">
         {/* Decorative illustration - top right */}
         <div className="absolute top-0 right-0">
           <Image
@@ -20,7 +64,7 @@ export default function AboutPage() {
           />
         </div>
 
-        <div className="mx-auto max-w-[1320px]">
+        <div className="mx-auto w-[90%] lg:w-[80%]">
           {/* About Us label */}
           <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.25em] text-text-muted">
             About us
@@ -47,7 +91,11 @@ export default function AboutPage() {
           {/* Images and content grid */}
           <div className="grid gap-6 lg:grid-cols-2 lg:gap-[24px] items-start">
             {/* Left side - Image with built-in stripes */}
-            <div className="relative flex justify-center lg:justify-end">
+            <div
+              className={`relative flex justify-center lg:justify-end transition-all duration-1000 ease-out ${
+                heroVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+              }`}
+            >
               <Image
                 src="/images/imgs/about us image left .webp"
                 alt="Young professionals"
@@ -64,7 +112,12 @@ export default function AboutPage() {
               </p>
 
               {/* CTA Image with button */}
-              <div className="relative inline-block mx-auto lg:mx-0">
+              <div
+                className={`relative inline-block mx-auto lg:mx-0 transition-all duration-1000 ease-out ${
+                  heroVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
+                }`}
+                style={{ transitionDelay: "200ms" }}
+              >
                 <Image
                   src="/images/imgs/about us image right .webp"
                   alt="Craftsman working"
@@ -89,11 +142,16 @@ export default function AboutPage() {
       </section>
 
       {/* ===== VISION & VALUES SECTION ===== */}
-      <section className="w-full bg-[#F2E8DF] px-6 py-16 lg:px-12 lg:py-24">
-        <div className="mx-auto max-w-[1320px]">
+      <section ref={visionRef} className="w-full bg-[#F2E8DF] px-6 py-16 lg:px-12 lg:py-24">
+        <div className="mx-auto w-[90%] lg:w-[80%]">
           <div className="grid gap-12 lg:grid-cols-3">
             {/* Vision - Left column */}
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                visionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "0ms" }}
+            >
               <h2 className="mb-4 text-3xl font-medium lg:text-4xl">Vision</h2>
               <p className="text-base leading-relaxed text-text-secondary">
                 A community where every youth is empowered to build a brighter future.
@@ -101,7 +159,12 @@ export default function AboutPage() {
             </div>
 
             {/* Values - Middle column (Integrity & Collaboration + Apply Now button on desktop) */}
-            <div className="space-y-6">
+            <div
+              className={`space-y-6 transition-all duration-700 ease-out ${
+                visionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "200ms" }}
+            >
               <div>
                 <h3 className="mb-2 text-lg font-medium text-[#1C6FAF]">Integrity</h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
@@ -129,7 +192,12 @@ export default function AboutPage() {
             </div>
 
             {/* Values - Right column (Empowerment & Innovation + Apply Now button on mobile) */}
-            <div className="space-y-6">
+            <div
+              className={`space-y-6 transition-all duration-700 ease-out ${
+                visionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "400ms" }}
+            >
               <div>
                 <h3 className="mb-2 text-lg font-medium text-[#1C6FAF]">Empowerment</h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
@@ -160,7 +228,7 @@ export default function AboutPage() {
       </section>
 
       {/* ===== OUR STORY / JOURNEY SECTION ===== */}
-      <section className="relative w-full bg-[#002039] px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
+      <section ref={storyRef} className="relative w-full bg-[#002039] px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
         {/* Decorative illustration - top right */}
         <div className="absolute top-0 right-0">
           <Image
@@ -183,13 +251,17 @@ export default function AboutPage() {
           />
         </div>
 
-        <div className="mx-auto max-w-[1320px]">
+        <div className="mx-auto w-[90%] lg:w-[80%]">
           <h2 className="mb-8 text-3xl font-medium text-white lg:text-4xl">
             Our story/Journey
           </h2>
 
           {/* Story content box */}
-          <div className="rounded-[20px] bg-[#FFCE4C] p-8 lg:p-12 w-full">
+          <div
+            className={`rounded-[20px] bg-[#FFCE4C] p-8 lg:p-12 w-full transition-all duration-1000 ease-out ${
+              storyVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
+          >
             <p className="text-base leading-relaxed text-black">
               Founded in 2024 with a vision to reduce inequality, Ejidike began as a small grant initiative and has since evolved into a dynamic ecosystem empowering many in our communities. What started as a small experiment is now shaping the future of inclusive development blending capital with coaching to help individuals not just access opportunities but sustain them. As we look ahead, our focus remains clear: to expand impact, deepen partnerships, and build a future where every ambition has the support it deserves.
             </p>
@@ -198,11 +270,15 @@ export default function AboutPage() {
       </section>
 
       {/* ===== LEADERSHIP & TRANSPARENCY SECTION ===== */}
-      <section className="w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24">
-        <div className="mx-auto max-w-[1320px]">
+      <section ref={leadershipRef} className="w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24">
+        <div className="mx-auto w-[90%] lg:w-[80%]">
           <div className="flex flex-col lg:flex-row lg:items-stretch gap-8 lg:gap-0">
             {/* Leadership & Governance */}
-            <div className="flex-1 lg:pr-12">
+            <div
+              className={`flex-1 lg:pr-12 transition-all duration-700 ease-out ${
+                leadershipVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+              }`}
+            >
               <h2 className="mb-4 text-xl font-medium text-text-primary">
                 Leadership & Governance
               </h2>
@@ -215,7 +291,12 @@ export default function AboutPage() {
             <div className="hidden lg:block w-[1px] bg-[#D9D4CF]"></div>
 
             {/* Transparency & Accountability */}
-            <div className="flex-1 lg:pl-12">
+            <div
+              className={`flex-1 lg:pl-12 transition-all duration-700 ease-out ${
+                leadershipVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
+              }`}
+              style={{ transitionDelay: "200ms" }}
+            >
               <h2 className="mb-4 text-xl font-medium text-text-primary">
                 Transparency & Accountability
               </h2>

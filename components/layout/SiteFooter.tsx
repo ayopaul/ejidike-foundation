@@ -28,30 +28,34 @@ export function SiteFooter() {
 
         {/* Columns */}
         <div className="flex flex-wrap gap-10">
-          <div className="min-w-[140px]">
+          <div>
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-300">
               Links
             </h4>
-            <ul className="space-y-1 text-sm text-slate-400">
-              <li>
-                <Link href="/">Home</Link>
-              </li>
-              <li>
-                <Link href="/programs">Programs</Link>
-              </li>
-              <li>
-                <Link href="/funding">Funding</Link>
-              </li>
-              <li>
-                <Link href="/partners">Partners</Link>
-              </li>
-              <li>
-                <Link href="/mentorship">Mentorship</Link>
-              </li>
-              <li>
-                <Link href="/news">News</Link>
-              </li>
-            </ul>
+            <div className="flex gap-10">
+              <ul className="space-y-1 text-sm text-slate-400">
+                <li>
+                  <Link href="/">Home</Link>
+                </li>
+                <li>
+                  <Link href="/programs">Programs</Link>
+                </li>
+                <li>
+                  <Link href="/funding">Funding</Link>
+                </li>
+              </ul>
+              <ul className="space-y-1 text-sm text-slate-400">
+                <li>
+                  <Link href="/partners">Partners</Link>
+                </li>
+                <li>
+                  <Link href="/mentorship">Mentorship</Link>
+                </li>
+                <li>
+                  <Link href="/news">News</Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           <div className="min-w-[140px]">

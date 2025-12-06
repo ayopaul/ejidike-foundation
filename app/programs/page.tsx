@@ -1,7 +1,7 @@
 // app/programs/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import Image from "next/image";
 import Link from "next/link";
@@ -31,11 +31,43 @@ const tabContent: Record<TabType, { description: string; cta: string; link: stri
 
 export default function ProgramsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("education");
+  const [heroVisible, setHeroVisible] = useState(false);
+  const [stepsVisible, setStepsVisible] = useState(false);
+
+  const heroRef = useRef<HTMLElement>(null);
+  const stepsRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.2,
+      rootMargin: "0px",
+    };
+
+    const createObserver = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+      return new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          setter(entry.isIntersecting);
+        });
+      }, observerOptions);
+    };
+
+    const heroObserver = createObserver(setHeroVisible);
+    const stepsObserver = createObserver(setStepsVisible);
+
+    if (heroRef.current) heroObserver.observe(heroRef.current);
+    if (stepsRef.current) stepsObserver.observe(stepsRef.current);
+
+    return () => {
+      heroObserver.disconnect();
+      stepsObserver.disconnect();
+    };
+  }, []);
 
   return (
     <SiteLayout>
       {/* ===== HERO & OVERVIEW SECTION ===== */}
       <section
+        ref={heroRef}
         className="relative w-full bg-[#FBF4EE] px-6 py-12 lg:px-12 lg:py-16"
         style={{
           backgroundImage: "url('/images/imgs/program background.webp')",
@@ -44,9 +76,13 @@ export default function ProgramsPage() {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <div className="mx-auto max-w-[1320px]">
+        <div className="mx-auto w-[90%] lg:w-[80%]">
           {/* Header Image */}
-          <div className="flex justify-center mb-12 lg:mb-16">
+          <div
+            className={`flex justify-center mb-12 lg:mb-16 transition-all duration-1000 ease-out ${
+              heroVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            }`}
+          >
             <Image
               src="/images/imgs/all-programs-header-image.webp"
               alt="Programs at Ejidike Foundation"
@@ -58,7 +94,12 @@ export default function ProgramsPage() {
           </div>
           <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 items-start">
             {/* Left side - Overview text */}
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                heroVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+              }`}
+              style={{ transitionDelay: "200ms" }}
+            >
               <h1 className="mb-6 text-3xl font-medium leading-snug lg:text-4xl">
                 Overview
               </h1>
@@ -68,7 +109,12 @@ export default function ProgramsPage() {
             </div>
 
             {/* Right side - Tabs */}
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                heroVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
+              }`}
+              style={{ transitionDelay: "400ms" }}
+            >
               {/* Tab buttons */}
               <div className="flex">
                 <button
@@ -134,7 +180,7 @@ export default function ProgramsPage() {
       </section>
 
       {/* ===== HOW THE PROGRAM WORKS SECTION ===== */}
-      <section className="relative w-full bg-black px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
+      <section ref={stepsRef} className="relative w-full bg-black px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
         {/* Background overlay image - repeating pattern */}
         <div
           className="absolute inset-0 opacity-50"
@@ -156,36 +202,61 @@ export default function ProgramsPage() {
           />
         </div>
 
-        <div className="mx-auto max-w-[1320px] relative z-10">
+        <div className="mx-auto w-[90%] lg:w-[80%] relative z-10">
           <h2 className="mb-12 text-center text-3xl font-medium text-white lg:text-4xl">
             How the program works
           </h2>
 
           {/* Steps */}
           <div className="max-w-2xl mx-auto space-y-6">
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+              style={{ transitionDelay: "0ms" }}
+            >
               <p className="text-[#FFCE4C] text-sm font-medium mb-1">One</p>
               <p className="text-white text-base">
                 Application & Selection — eligibility review, interviews
               </p>
             </div>
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+              style={{ transitionDelay: "100ms" }}
+            >
               <p className="text-[#FFCE4C] text-sm font-medium mb-1">Two</p>
               <p className="text-white text-base">Onboarding & Orientation</p>
             </div>
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+              style={{ transitionDelay: "200ms" }}
+            >
               <p className="text-[#FFCE4C] text-sm font-medium mb-1">Three</p>
               <p className="text-white text-base">
                 Support & Implementation — disbursement, mentorship, check-ins
               </p>
             </div>
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+              style={{ transitionDelay: "300ms" }}
+            >
               <p className="text-[#FFCE4C] text-sm font-medium mb-1">Four</p>
               <p className="text-white text-base">
                 Progress & Reporting — milestone metrics, community sharing
               </p>
             </div>
-            <div>
+            <div
+              className={`transition-all duration-700 ease-out ${
+                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}
+              style={{ transitionDelay: "400ms" }}
+            >
               <p className="text-[#FFCE4C] text-sm font-medium mb-1">Five</p>
               <p className="text-white text-base">Graduation & Alumni Network</p>
             </div>

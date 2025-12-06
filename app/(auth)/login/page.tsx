@@ -288,6 +288,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { createSupabaseClient } from '@/lib/supabase';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -299,6 +300,7 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -320,10 +322,19 @@ export default function LoginPage() {
         return;
       }
 
-      // Sign in
+      if (!captchaToken) {
+        setError('Please complete the captcha verification');
+        setLoading(false);
+        return;
+      }
+
+      // Sign in with captcha token
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        options: {
+          captchaToken,
+        },
       });
 
       if (authError) {
@@ -417,6 +428,19 @@ export default function LoginPage() {
                 onChange={handleChange}
                 disabled={loading}
                 required
+              />
+            </div>
+
+            {/* Turnstile CAPTCHA */}
+            <div className="flex justify-center">
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={(token) => setCaptchaToken(token)}
+                onError={() => {
+                  setError('Captcha verification failed. Please try again.');
+                  setCaptchaToken(null);
+                }}
+                onExpire={() => setCaptchaToken(null)}
               />
             </div>
           </CardContent>

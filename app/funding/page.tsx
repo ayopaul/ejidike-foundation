@@ -304,7 +304,7 @@ export default function FundingPage() {
           {/* Steps */}
           <div className="space-y-8">
             <div
-              className={`flex items-start gap-[24px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
+              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ transitionDelay: "0ms" }}
@@ -316,7 +316,7 @@ export default function FundingPage() {
             </div>
 
             <div
-              className={`flex items-start gap-[24px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
+              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ transitionDelay: "250ms" }}
@@ -328,7 +328,7 @@ export default function FundingPage() {
             </div>
 
             <div
-              className={`flex items-start gap-[24px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
+              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ transitionDelay: "500ms" }}
@@ -340,7 +340,7 @@ export default function FundingPage() {
             </div>
 
             <div
-              className={`flex items-start gap-[24px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
+              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ transitionDelay: "750ms" }}
@@ -352,7 +352,7 @@ export default function FundingPage() {
             </div>
 
             <div
-              className={`flex items-start gap-[24px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
+              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
                 isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
               style={{ transitionDelay: "1000ms" }}

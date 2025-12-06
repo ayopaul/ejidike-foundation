@@ -25,7 +25,6 @@ const navItems: NavItem[] = [
       { href: "/funding", label: "Funding" },
     ],
   },
-  { href: "/partners", label: "Partners" },
   {
     href: "/mentorship",
     label: "Mentorship",
@@ -35,7 +34,6 @@ const navItems: NavItem[] = [
     ],
   },
   { href: "/events", label: "Events" },
-  { href: "/news", label: "News" },
 ];
 
 export function SiteHeader() {

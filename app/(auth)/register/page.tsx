@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -83,6 +85,12 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!captchaToken) {
+      setError('Please complete the captcha verification');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -93,7 +101,8 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           full_name: formData.full_name,
-          role: formData.role
+          role: formData.role,
+          captchaToken
         })
       });
 
@@ -236,6 +245,19 @@ export default function RegisterPage() {
                 disabled={loading}
                 required
                 autoComplete="new-password"
+              />
+            </div>
+
+            {/* Turnstile CAPTCHA */}
+            <div className="flex justify-center">
+              <Turnstile
+                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                onSuccess={(token) => setCaptchaToken(token)}
+                onError={() => {
+                  setError('Captcha verification failed. Please try again.');
+                  setCaptchaToken(null);
+                }}
+                onExpire={() => setCaptchaToken(null)}
               />
             </div>
           </CardContent>

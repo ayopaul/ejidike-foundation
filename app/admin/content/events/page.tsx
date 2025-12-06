@@ -16,10 +16,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Plus, Edit, Trash2, Loader2, Calendar, MapPin, Users, Link as LinkIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, Calendar, MapPin, Users, Link as LinkIcon, ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import Image from 'next/image';
 
 const EVENT_TYPES = [
   { value: 'webinar', label: 'Webinar' },
@@ -49,6 +50,7 @@ export default function EventsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -61,7 +63,8 @@ export default function EventsPage() {
     meeting_link: '',
     max_participants: '',
     registration_deadline: '',
-    is_published: false
+    is_published: false,
+    image_url: ''
   });
 
   useEffect(() => {
@@ -109,6 +112,7 @@ export default function EventsPage() {
         max_participants: formData.max_participants ? parseInt(formData.max_participants) : null,
         registration_deadline: formData.registration_deadline || null,
         is_published: formData.is_published,
+        image_url: formData.image_url || null,
         created_by: profile?.id
       };
 
@@ -156,7 +160,8 @@ export default function EventsPage() {
       meeting_link: event.meeting_link || '',
       max_participants: event.max_participants?.toString() || '',
       registration_deadline: event.registration_deadline || '',
-      is_published: event.is_published
+      is_published: event.is_published,
+      image_url: event.image_url || ''
     });
     setEditingId(event.id);
     setDialogOpen(true);
@@ -181,8 +186,85 @@ export default function EventsPage() {
       meeting_link: '',
       max_participants: '',
       registration_deadline: '',
-      is_published: false
+      is_published: false,
+      image_url: ''
     });
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    console.log('File selected:', file.name, file.type, file.size);
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Invalid file type', {
+        description: 'Please upload a JPG, PNG, or WebP image'
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('File too large', {
+        description: 'Please upload an image smaller than 5MB'
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    console.log('Starting upload...');
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `event-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `events/${fileName}`;
+
+      console.log('Uploading to:', filePath);
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('event-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      console.log('Upload response:', { uploadData, uploadError });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
+
+      console.log('Public URL:', publicUrl);
+
+      setFormData(prev => ({ ...prev, image_url: publicUrl }));
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image', {
+        description: error.message || 'Please try again'
+      });
+    } finally {
+      console.log('Upload finished');
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove image
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, image_url: '' }));
   };
 
   const handleDelete = async (id: string) => {
@@ -286,6 +368,67 @@ export default function EventsPage() {
                         rows={4}
                         required
                       />
+                    </div>
+
+                    {/* Event Thumbnail */}
+                    <div className="space-y-2">
+                      <Label>Event Thumbnail</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Upload an image to display on the events page (JPG, PNG, WebP, max 5MB)
+                      </p>
+
+                      {formData.image_url ? (
+                        <div className="relative rounded-lg overflow-hidden border">
+                          <div className="relative h-40 w-full">
+                            <Image
+                              src={formData.image_url}
+                              alt="Event thumbnail preview"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
+                          <div className="absolute top-2 right-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              onClick={handleRemoveImage}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                          <input
+                            type="file"
+                            id="event-image-upload"
+                            className="hidden"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={handleImageUpload}
+                            disabled={uploadingImage}
+                          />
+                          <label
+                            htmlFor="event-image-upload"
+                            className="cursor-pointer flex flex-col items-center space-y-2"
+                          >
+                            {uploadingImage ? (
+                              <>
+                                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                                <span className="text-sm text-muted-foreground">Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                <div className="text-sm">
+                                  <span className="text-primary font-medium">Click to upload</span>
+                                  <span className="text-muted-foreground"> a thumbnail image</span>
+                                </div>
+                              </>
+                            )}
+                          </label>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -430,7 +573,18 @@ export default function EventsPage() {
                   return (
                     <Card key={event.id}>
                       <CardHeader>
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between gap-4">
+                          {/* Thumbnail preview */}
+                          {event.image_url && (
+                            <div className="relative h-20 w-32 rounded-lg overflow-hidden flex-shrink-0">
+                              <Image
+                                src={event.image_url}
+                                alt={event.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2">
                               <CardTitle className="text-lg">{event.title}</CardTitle>

@@ -1,15 +1,59 @@
 // app/page.tsx
-import React from "react";
+"use client";
+
+import React, { useEffect, useState, useRef } from "react";
 import { SiteLayout } from "@/components/layout/SiteLayout";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function HomePage() {
+  const [heroVisible, setHeroVisible] = useState(false);
+  const [ambitionVisible, setAmbitionVisible] = useState(false);
+  const [nextGenVisible, setNextGenVisible] = useState(false);
+  const [startVisible, setStartVisible] = useState(false);
+
+  const heroRef = useRef<HTMLDivElement>(null);
+  const ambitionRef = useRef<HTMLDivElement>(null);
+  const nextGenRef = useRef<HTMLDivElement>(null);
+  const startRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.2,
+      rootMargin: "0px",
+    };
+
+    const createObserver = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+      return new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          setter(entry.isIntersecting);
+        });
+      }, observerOptions);
+    };
+
+    const heroObserver = createObserver(setHeroVisible);
+    const ambitionObserver = createObserver(setAmbitionVisible);
+    const nextGenObserver = createObserver(setNextGenVisible);
+    const startObserver = createObserver(setStartVisible);
+
+    if (heroRef.current) heroObserver.observe(heroRef.current);
+    if (ambitionRef.current) ambitionObserver.observe(ambitionRef.current);
+    if (nextGenRef.current) nextGenObserver.observe(nextGenRef.current);
+    if (startRef.current) startObserver.observe(startRef.current);
+
+    return () => {
+      heroObserver.disconnect();
+      ambitionObserver.disconnect();
+      nextGenObserver.disconnect();
+      startObserver.disconnect();
+    };
+  }, []);
+
   return (
     <SiteLayout>
       {/* ===== HERO SECTION ===== */}
-      <section className="w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 xl:py-24">
-        <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-[1.1fr,1fr] lg:items-center">
+      <section ref={heroRef} className="w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 xl:py-24">
+        <div className="mx-auto grid w-[90%] lg:w-[80%] gap-12 lg:grid-cols-[1.1fr,1fr] lg:items-center">
           {/* Left column */}
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-text-muted">
@@ -37,7 +81,11 @@ export default function HomePage() {
           </div>
 
           {/* Right column - Hero image */}
-          <div className="relative">
+          <div
+            className={`relative transition-all duration-1000 ease-out ${
+              heroVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
+            }`}
+          >
             <Image
               src="/images/imgs/hero image.webp"
               alt="Young professional smiling"
@@ -52,6 +100,7 @@ export default function HomePage() {
 
       {/* ===== FROM AMBITION TO ACTION (Dark Section) ===== */}
       <section
+        ref={ambitionRef}
         className="relative w-full overflow-hidden bg-[#002039] py-20 lg:py-24"
         style={{
           backgroundImage: "url('/images/imgs/from-ambition-to-action-BG.webp')",
@@ -104,14 +153,19 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-[1320px] px-6 lg:px-12">
+        <div className="relative mx-auto w-[90%] lg:w-[80%]">
           <h2 className="mb-16 text-center text-3xl font-medium text-white lg:text-4xl">
             From ambition to action
           </h2>
 
           <div className="grid gap-12 md:grid-cols-3 lg:gap-16">
             {/* Education Grants */}
-            <article className="text-center text-white">
+            <article
+              className={`text-center text-white transition-all duration-700 ease-out ${
+                ambitionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "200ms" }}
+            >
               <div className="mb-6 flex justify-center">
                 <Image
                   src="/images/icons/Education-grants-icon.webp"
@@ -128,7 +182,12 @@ export default function HomePage() {
             </article>
 
             {/* Business Grants */}
-            <article className="text-center text-white">
+            <article
+              className={`text-center text-white transition-all duration-700 ease-out ${
+                ambitionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "400ms" }}
+            >
               <div className="mb-6 flex justify-center">
                 <Image
                   src="/images/icons/Business-grants-icon.webp"
@@ -145,7 +204,12 @@ export default function HomePage() {
             </article>
 
             {/* Mentorship Network */}
-            <article className="text-center text-white">
+            <article
+              className={`text-center text-white transition-all duration-700 ease-out ${
+                ambitionVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              }`}
+              style={{ transitionDelay: "600ms" }}
+            >
               <div className="mb-6 flex justify-center">
                 <Image
                   src="/images/icons/Mentorship-network-icon.webp"
@@ -165,7 +229,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== WE BACK THE NEXT GENERATION ===== */}
-      <section className="relative w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
+      <section ref={nextGenRef} className="relative w-full bg-[#FBF4EE] px-6 py-16 lg:px-12 lg:py-24 overflow-hidden">
         {/* Bottom right illustration */}
         <div className="absolute bottom-0 right-0">
           <Image
@@ -177,9 +241,13 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="relative mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-2 lg:items-center">
+        <div className="relative mx-auto grid w-[90%] lg:w-[80%] gap-12 lg:grid-cols-2 lg:items-center">
           {/* Left - Image */}
-          <div className="relative">
+          <div
+            className={`relative transition-all duration-1000 ease-out ${
+              nextGenVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+            }`}
+          >
             <Image
               src="/images/imgs/We back the next generation of.webp"
               alt="Young Nigerian leaders and creators"
@@ -205,10 +273,14 @@ export default function HomePage() {
       </section>
 
       {/* ===== DON'T KNOW HOW TO START (Dark Section) ===== */}
-      <section className="w-full bg-dark py-16 lg:py-24">
-        <div className="mx-auto grid max-w-[1320px] gap-12 px-6 lg:grid-cols-2 lg:items-center lg:px-12">
+      <section ref={startRef} className="w-full bg-dark py-16 lg:py-24">
+        <div className="mx-auto grid w-[90%] lg:w-[80%] gap-12 lg:grid-cols-2 lg:items-center">
           {/* Left - Image */}
-          <div className="relative">
+          <div
+            className={`relative transition-all duration-1000 ease-out ${
+              startVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-8"
+            }`}
+          >
             <Image
               src="/images/imgs/dont-know-where-to-start.webp"
               alt="Don't know how to start?"

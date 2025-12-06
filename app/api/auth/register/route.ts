@@ -21,12 +21,45 @@ const supabaseAdmin = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, full_name, role } = body;
+    const { email, password, full_name, role, captchaToken } = body;
 
     // Validate required fields
     if (!email || !password || !full_name || !role) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate captcha token
+    if (!captchaToken) {
+      return NextResponse.json(
+        { error: 'Captcha verification required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify captcha token with Cloudflare Turnstile
+    const turnstileResponse = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          secret: process.env.TURNSTILE_SECRET_KEY,
+          response: captchaToken,
+        }),
+      }
+    );
+
+    const turnstileData = await turnstileResponse.json();
+
+    if (!turnstileData.success) {
+      console.error('Turnstile verification failed:', turnstileData);
+      return NextResponse.json(
+        { error: 'Captcha verification failed. Please try again.' },
         { status: 400 }
       );
     }
