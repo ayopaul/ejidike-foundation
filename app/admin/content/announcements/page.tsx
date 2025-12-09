@@ -18,10 +18,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Plus, Edit, Trash2, Loader2, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase';
 import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { Database, Announcement } from '@/types/database';
+import type { Announcement } from '@/types/database';
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -42,7 +42,6 @@ export default function AnnouncementsPage() {
 
   const fetchAnnouncements = async () => {
     try {
-      const supabase = createClientComponentClient<Database>();
       const { data, error } = await supabase
         .from('announcements')
         .select('*')
@@ -61,8 +60,6 @@ export default function AnnouncementsPage() {
     e.preventDefault();
 
     try {
-      const supabase = createClientComponentClient<Database>();
-
       // If activating this announcement, deactivate all others first
       if (formData.is_active) {
         await supabase
@@ -127,7 +124,6 @@ export default function AnnouncementsPage() {
     if (!confirm('Delete this announcement?')) return;
 
     try {
-      const supabase = createClientComponentClient<Database>();
       const { error } = await supabase
         .from('announcements')
         .delete()
@@ -143,7 +139,6 @@ export default function AnnouncementsPage() {
 
   const toggleActive = async (announcement: Announcement) => {
     try {
-      const supabase = createClientComponentClient<Database>();
       const newActiveState = !announcement.is_active;
 
       // If activating, deactivate all others first

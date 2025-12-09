@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const profileData = data[0];
+      const profileData = data[0] as any;
       setProfile(profileData);
       setRole(profileData.role as UserRole);
       setError(null);

@@ -52,27 +52,24 @@ export default function ApplicationDetailPage() {
         .eq('id', params.id)
         .single();
 
-      if (error) {
+      if (error || !data) {
         console.error('Error fetching application:', error);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
         // RLS might be blocking access
         toast.error('Access denied - You do not have permission to view this application');
         router.push('/applications');
         return;
       }
 
-      console.log('Application data:', data);
-      console.log('Application applicant_id:', data?.applicant_id);
+      const applicationData = data as any;
 
       // Double-check if user has access (applicant or admin)
-      if (data && data.applicant_id !== profile?.id && profile?.role !== 'admin') {
+      if (applicationData.applicant_id !== profile?.id && profile?.role !== 'admin') {
         toast.error('Access denied');
         router.push('/applications');
         return;
       }
 
-      setApplication(data);
+      setApplication(applicationData);
     } catch (error: any) {
       console.error('Error fetching application:', error);
       toast.error('Failed to load application');

@@ -70,6 +70,8 @@ export default function ApplyPage() {
   };
 
   const loadDraft = async () => {
+    if (!draftId) return;
+
     try {
       const { data, error } = await supabase
         .from('applications')
@@ -79,8 +81,9 @@ export default function ApplyPage() {
 
       if (error) throw error;
 
-      if (data.application_data) {
-        setFormData(data.application_data);
+      const draftData = data as any;
+      if (draftData?.application_data) {
+        setFormData(draftData.application_data);
       }
     } catch (error: any) {
       console.error('Error loading draft:', error);
@@ -108,11 +111,11 @@ export default function ApplyPage() {
 
       if (existingDraft) {
         // Use existing draft
-        setApplicationId(existingDraft.id);
+        setApplicationId((existingDraft as any).id);
       } else {
         // Create new draft application silently
-        const { data, error } = await supabase
-          .from('applications')
+        const { data, error } = await (supabase
+          .from('applications') as any)
           .insert({
             program_id: params.id,
             applicant_id: profile.id,
@@ -142,14 +145,14 @@ export default function ApplyPage() {
 
     // Debounce auto-save by 2 seconds
     const timeoutId = setTimeout(() => {
-      supabase
-        .from('applications')
+      (supabase
+        .from('applications') as any)
         .update({
           application_data: formData,
           updated_at: new Date().toISOString()
         })
         .eq('id', applicationId)
-        .then(({ error }) => {
+        .then(({ error }: { error: any }) => {
           if (error) {
             console.error('Auto-save failed:', error);
           }
@@ -170,8 +173,8 @@ export default function ApplyPage() {
 
     try {
       // Update the auto-created draft with current form data
-      const { error } = await supabase
-        .from('applications')
+      const { error } = await (supabase
+        .from('applications') as any)
         .update({
           application_data: formData,
           updated_at: new Date().toISOString()
@@ -214,8 +217,8 @@ export default function ApplyPage() {
 
     try {
       // Update the auto-created draft to submitted status
-      const { error } = await supabase
-        .from('applications')
+      const { error } = await (supabase
+        .from('applications') as any)
         .update({
           status: 'submitted',
           application_data: formData,

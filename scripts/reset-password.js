@@ -40,7 +40,7 @@ async function resetPassword(email, newPassword) {
 
     console.log('✅ Password reset successfully!');
     console.log('📧 Email:', email);
-    console.log('🔑 New password:', newPassword);
+    console.log('🔑 Password has been updated (not logged for security)');
     console.log('\nYou can now sign in with the new password.\n');
 
   } catch (err) {

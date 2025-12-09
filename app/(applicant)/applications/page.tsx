@@ -79,8 +79,10 @@ export default function ApplicationsPage() {
         return;
       }
 
+      const applications = appsData as any[];
+
       // Get unique program IDs
-      const programIds = [...new Set(appsData.map(app => app.program_id))];
+      const programIds = [...new Set(applications.map(app => app.program_id))];
 
       // Fetch programs separately
       const { data: programsData, error: programsError } = await supabase
@@ -96,16 +98,17 @@ export default function ApplicationsPage() {
           description: programsError.message
         });
         // Continue without program data
-        setApplications(appsData.map(app => ({ ...app, program: { title: 'Unknown Program', type: 'grant' } })));
+        setApplications(applications.map(app => ({ ...app, program: { title: 'Unknown Program', type: 'grant' } })));
         setLoading(false);
         return;
       }
 
       // Create a map of programs by ID
-      const programsMap = new Map(programsData?.map(p => [p.id, p]) || []);
+      const programs = (programsData || []) as any[];
+      const programsMap = new Map(programs.map(p => [p.id, p]));
 
       // Combine applications with their programs
-      const combinedData = appsData.map(app => ({
+      const combinedData = applications.map(app => ({
         ...app,
         program: programsMap.get(app.program_id) || { title: 'Unknown Program', type: 'grant' }
       }));
