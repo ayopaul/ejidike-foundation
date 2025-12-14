@@ -10,7 +10,16 @@
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:smoke": "playwright test smoke.spec.ts",
+    "test:public": "playwright test public-pages.spec.ts",
+    "test:auth": "playwright test auth.spec.ts",
+    "test:api": "playwright test api.spec.ts"
   },
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
@@ -52,10 +61,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.22",
+    "dotenv": "^17.2.3",
     "eslint": "^8.56.0",
     "eslint-config-next": "15.1.0",
     "postcss": "^8.5.6",

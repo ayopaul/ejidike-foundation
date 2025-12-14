@@ -1,21 +1,54 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/middleware.ts
  * PURPOSE: Protect routes based on authentication and role
+ * FEATURE: Password protection for pre-launch access
  */
 
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Password protection cookie name
+const SITE_ACCESS_COOKIE = 'site_access_granted';
+
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // ====== PASSWORD PROTECTION (Coming Soon Mode) ======
+  // Check if site password is set (enables coming soon mode)
+  const sitePassword = process.env.SITE_PASSWORD;
+
+  if (sitePassword) {
+    // Routes that bypass password protection
+    const bypassRoutes = [
+      '/coming-soon',
+      '/api/site-access',
+      '/_next',
+      '/favicon.ico',
+      '/images',
+      '/api/health',
+    ];
+
+    const shouldBypass = bypassRoutes.some(route => path.startsWith(route));
+
+    if (!shouldBypass) {
+      // Check for access cookie
+      const accessCookie = request.cookies.get(SITE_ACCESS_COOKIE);
+
+      if (!accessCookie || accessCookie.value !== 'true') {
+        // Redirect to coming soon / password page
+        return NextResponse.redirect(new URL('/coming-soon', request.url));
+      }
+    }
+  }
+
+  // ====== EXISTING AUTH LOGIC ======
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req: request, res });
 
   const {
     data: { session }
   } = await supabase.auth.getSession();
-
-  const path = request.nextUrl.pathname;
 
   // Public routes that don't require authentication
   const publicRoutes = [

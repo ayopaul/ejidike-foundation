@@ -7,3 +7,8 @@ build
 *.log
 *.lock
 /CLAUDE.md
+
+# Test outputs (may contain sensitive screenshots)
+test-results/
+playwright-report/
+tests/screenshots/
