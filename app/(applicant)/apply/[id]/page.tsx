@@ -11,6 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -33,11 +36,28 @@ export default function ApplyPage() {
   const [applicationId, setApplicationId] = useState<string | null>(draftId);
 
   const [formData, setFormData] = useState({
+    // Section 2: Academic Background
+    current_institution: '',
+    program_of_study: '',
+    year_of_study: '',
+    previous_qualifications: '',
+    // Section 3: Grant Request Details
+    grant_type: '',
+    amount_requested: '',
+    purpose_of_grant: '',
+    duration_of_support: '',
+    // Section 4: Personal Statement
+    academic_goals: '',
+    how_grant_will_help: '',
+    challenges_faced: '',
+    // Legacy fields (for backward compatibility)
     motivation: '',
     goals: '',
     experience: '',
     additional_info: ''
   });
+
+  const [declaration, setDeclaration] = useState(false);
 
   useEffect(() => {
     if (params.id && profile) {
@@ -198,13 +218,33 @@ export default function ApplyPage() {
   };
 
   const handleSubmit = async () => {
-    // Validate
-    if (!formData.motivation.trim()) {
-      toast.error('Motivation is required');
+    // Validate required fields
+    if (!formData.current_institution.trim()) {
+      toast.error('Current institution is required');
       return;
     }
-    if (!formData.goals.trim()) {
-      toast.error('Goals are required');
+    if (!formData.program_of_study.trim()) {
+      toast.error('Program of study is required');
+      return;
+    }
+    if (!formData.grant_type) {
+      toast.error('Please select a grant type');
+      return;
+    }
+    if (!formData.purpose_of_grant.trim()) {
+      toast.error('Purpose of grant is required');
+      return;
+    }
+    if (!formData.academic_goals.trim()) {
+      toast.error('Academic goals are required');
+      return;
+    }
+    if (!formData.how_grant_will_help.trim()) {
+      toast.error('Please explain how the grant will help you');
+      return;
+    }
+    if (!declaration) {
+      toast.error('Please accept the declaration to submit');
       return;
     }
 
@@ -311,109 +351,388 @@ export default function ApplyPage() {
         </p>
       </div>
 
-      {/* Application Form */}
+      {/* Section 1: Applicant Information (from profile) */}
       <Card>
         <CardHeader>
-          <CardTitle>Application Form</CardTitle>
+          <CardTitle>Section 1: Applicant Information</CardTitle>
+          <CardDescription>
+            This information is from your profile. Update your profile if any details are incorrect.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Full Name</Label>
+              <p className="font-medium">{profile?.full_name || 'Not provided'}</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Email Address</Label>
+              <p className="font-medium">{profile?.email || user?.email || 'Not provided'}</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Phone Number</Label>
+              <p className="font-medium">{profile?.phone || 'Not provided'}</p>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-muted-foreground text-xs">Date of Birth</Label>
+              <p className="font-medium">{profile?.date_of_birth || 'Not provided'}</p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link href="/profile" className="text-sm text-primary hover:underline">
+              Update profile information →
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 2: Academic Background */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Section 2: Academic Background</CardTitle>
           <CardDescription>
             Fields marked with * are required
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Motivation */}
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="motivation">
-              Why are you applying for this program? *
+            <Label htmlFor="current_institution">Current Institution *</Label>
+            <Input
+              id="current_institution"
+              placeholder="e.g., University of Nigeria, Nsukka"
+              value={formData.current_institution}
+              onChange={(e) => handleChange('current_institution', e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="program_of_study">Program of Study *</Label>
+            <Input
+              id="program_of_study"
+              placeholder="e.g., Computer Science, Business Administration"
+              value={formData.program_of_study}
+              onChange={(e) => handleChange('program_of_study', e.target.value)}
+              required
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="year_of_study">Year of Study</Label>
+              <Select
+                value={formData.year_of_study}
+                onValueChange={(value) => handleChange('year_of_study', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="awaiting_admission">Awaiting Admission</SelectItem>
+                  <SelectItem value="100_level">100 Level / Year 1</SelectItem>
+                  <SelectItem value="200_level">200 Level / Year 2</SelectItem>
+                  <SelectItem value="300_level">300 Level / Year 3</SelectItem>
+                  <SelectItem value="400_level">400 Level / Year 4</SelectItem>
+                  <SelectItem value="500_level">500 Level / Year 5</SelectItem>
+                  <SelectItem value="hnd_1">HND Year 1</SelectItem>
+                  <SelectItem value="hnd_2">HND Year 2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="previous_qualifications">Previous Qualifications</Label>
+            <Textarea
+              id="previous_qualifications"
+              placeholder="List your previous qualifications (e.g., WAEC, NECO, OND, etc.)"
+              value={formData.previous_qualifications}
+              onChange={(e) => handleChange('previous_qualifications', e.target.value)}
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 3: Grant Request Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Section 3: Grant Request Details</CardTitle>
+          <CardDescription>
+            Specify the type of support you are requesting
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="grant_type">Type of Grant Requested *</Label>
+            <Select
+              value={formData.grant_type}
+              onValueChange={(value) => handleChange('grant_type', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select grant type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="education_level_1">Education Grant - Level 1 (up to N500,000/year)</SelectItem>
+                <SelectItem value="education_level_2">Education Grant - Level 2 (up to N300,000)</SelectItem>
+                <SelectItem value="business_grant">Business Grant (up to N1,000,000)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="amount_requested">Amount Requested (Naira)</Label>
+            <Input
+              id="amount_requested"
+              type="text"
+              placeholder="e.g., 300,000"
+              value={formData.amount_requested}
+              onChange={(e) => handleChange('amount_requested', e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Education Level 1: up to N500,000 | Level 2: up to N300,000 | Business: up to N1,000,000
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="purpose_of_grant">Purpose of Grant *</Label>
+            <Textarea
+              id="purpose_of_grant"
+              placeholder="Explain what the grant funds will be used for (e.g., tuition fees, books, equipment, business startup costs)"
+              value={formData.purpose_of_grant}
+              onChange={(e) => handleChange('purpose_of_grant', e.target.value)}
+              rows={4}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="duration_of_support">Duration of Support Needed</Label>
+            <Select
+              value={formData.duration_of_support}
+              onValueChange={(value) => handleChange('duration_of_support', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select duration" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="one_semester">One Semester</SelectItem>
+                <SelectItem value="one_academic_year">One Academic Year</SelectItem>
+                <SelectItem value="full_program">Full Duration of Study</SelectItem>
+                <SelectItem value="one_time">One-time (Business Grant)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section 4: Personal Statement */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Section 4: Personal Statement</CardTitle>
+          <CardDescription>
+            Help us understand your goals and circumstances
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="academic_goals">
+              Describe your academic goals and career aspirations *
             </Label>
             <Textarea
-              id="motivation"
-              placeholder="Explain your motivation and what makes you a good fit..."
-              value={formData.motivation}
-              onChange={(e) => handleChange('motivation', e.target.value)}
+              id="academic_goals"
+              placeholder="What do you want to achieve academically and professionally? What career path are you pursuing?"
+              value={formData.academic_goals}
+              onChange={(e) => handleChange('academic_goals', e.target.value)}
               rows={5}
               required
             />
             <p className="text-xs text-muted-foreground">
-              {formData.motivation.length} characters
+              {formData.academic_goals.length} characters
             </p>
           </div>
-
-          {/* Goals */}
           <div className="space-y-2">
-            <Label htmlFor="goals">
-              What are your goals and expected outcomes? *
+            <Label htmlFor="how_grant_will_help">
+              Explain how this grant will help you achieve your goals *
             </Label>
             <Textarea
-              id="goals"
-              placeholder="Describe what you hope to achieve..."
-              value={formData.goals}
-              onChange={(e) => handleChange('goals', e.target.value)}
+              id="how_grant_will_help"
+              placeholder="How will this financial support make a difference in your education or business journey?"
+              value={formData.how_grant_will_help}
+              onChange={(e) => handleChange('how_grant_will_help', e.target.value)}
               rows={5}
               required
             />
             <p className="text-xs text-muted-foreground">
-              {formData.goals.length} characters
+              {formData.how_grant_will_help.length} characters
             </p>
           </div>
-
-          {/* Experience */}
           <div className="space-y-2">
-            <Label htmlFor="experience">
-              Relevant experience or background
+            <Label htmlFor="challenges_faced">
+              Highlight any challenges you face (financial, personal, etc.)
             </Label>
             <Textarea
-              id="experience"
-              placeholder="Share any relevant experience, skills, or achievements..."
-              value={formData.experience}
-              onChange={(e) => handleChange('experience', e.target.value)}
+              id="challenges_faced"
+              placeholder="Share any obstacles or difficulties that affect your ability to pursue your education or business goals"
+              value={formData.challenges_faced}
+              onChange={(e) => handleChange('challenges_faced', e.target.value)}
               rows={4}
             />
             <p className="text-xs text-muted-foreground">
-              {formData.experience.length} characters
-            </p>
-          </div>
-
-          {/* Additional Info */}
-          <div className="space-y-2">
-            <Label htmlFor="additional_info">
-              Additional information
-            </Label>
-            <Textarea
-              id="additional_info"
-              placeholder="Anything else you'd like us to know..."
-              value={formData.additional_info}
-              onChange={(e) => handleChange('additional_info', e.target.value)}
-              rows={3}
-            />
-            <p className="text-xs text-muted-foreground">
-              {formData.additional_info.length} characters
+              {formData.challenges_faced.length} characters
             </p>
           </div>
         </CardContent>
       </Card>
 
-      {/* File Upload - Always available */}
-      {applicationId ? (
-        <FileUpload
-          applicationId={applicationId}
-          documentType="supporting_document"
-          label="Upload Supporting Documents (Optional)"
-          onUploadComplete={(url, name) => {
-            toast.success('Document uploaded', {
-              description: name
-            });
-          }}
-        />
-      ) : (
-        <Card className="border-dashed">
-          <CardContent className="pt-6 pb-6">
-            <div className="text-center text-muted-foreground">
-              <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
-              <p className="text-sm">Preparing upload...</p>
+      {/* Section 5: Supporting Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Section 5: Supporting Documents</CardTitle>
+          <CardDescription>
+            Please upload the required documents to support your application. All documents should be in PDF, JPG, or PNG format.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {applicationId ? (
+            <>
+              {/* Academic Transcripts */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Academic Transcripts *</Label>
+                  <span className="text-xs text-muted-foreground">(Required)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload your most recent academic transcripts or results
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="academic_transcript"
+                  label="Upload Academic Transcript"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('Academic transcript uploaded', { description: name });
+                  }}
+                />
+              </div>
+
+              {/* Proof of Enrollment */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Proof of Enrollment / Admission Letter *</Label>
+                  <span className="text-xs text-muted-foreground">(Required)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload your admission letter or current enrollment verification
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="enrollment_proof"
+                  label="Upload Enrollment Proof"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('Enrollment proof uploaded', { description: name });
+                  }}
+                />
+              </div>
+
+              {/* Recommendation Letter */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Recommendation Letter</Label>
+                  <span className="text-xs text-muted-foreground">(At least one required)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload a recommendation letter from a teacher, employer, or community leader
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="recommendation_letter"
+                  label="Upload Recommendation Letter"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('Recommendation letter uploaded', { description: name });
+                  }}
+                />
+              </div>
+
+              {/* Financial Need Statement */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Financial Need Statement *</Label>
+                  <span className="text-xs text-muted-foreground">(Required)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload proof of household income or a statement explaining your financial situation
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="financial_statement"
+                  label="Upload Financial Statement"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('Financial statement uploaded', { description: name });
+                  }}
+                />
+              </div>
+
+              {/* State of Origin Certificate */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">State of Origin Certificate *</Label>
+                  <span className="text-xs text-muted-foreground">(Required for Enugu indigenes)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload your certificate of origin or local government identification
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="state_of_origin"
+                  label="Upload State of Origin Certificate"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('State of origin certificate uploaded', { description: name });
+                  }}
+                />
+              </div>
+
+              {/* Additional Documents (Optional) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium">Additional Documents</Label>
+                  <span className="text-xs text-muted-foreground">(Optional)</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload any other supporting documents (certificates, awards, etc.)
+                </p>
+                <FileUpload
+                  applicationId={applicationId}
+                  documentType="additional_document"
+                  label="Upload Additional Document"
+                  onUploadComplete={(_url, name) => {
+                    toast.success('Additional document uploaded', { description: name });
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="border border-dashed rounded-lg p-6">
+              <div className="text-center text-muted-foreground">
+                <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin" />
+                <p className="text-sm">Preparing document uploads...</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Section 6: Declaration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Section 6: Declaration</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="declaration"
+              checked={declaration}
+              onCheckedChange={(checked) => setDeclaration(checked === true)}
+            />
+            <Label htmlFor="declaration" className="text-sm leading-relaxed cursor-pointer">
+              I hereby declare that the information provided in this application is true and accurate to the best of my knowledge. I understand that providing false information may result in disqualification or revocation of any grant awarded.
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Actions */}
       <div className="space-y-3 pb-8">

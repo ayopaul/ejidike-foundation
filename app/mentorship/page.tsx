@@ -65,23 +65,23 @@ export default function MentorshipPage() {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <div className="mx-auto w-[90%] lg:w-[80%]">
-          <div className="grid gap-10 lg:grid-cols-2 items-center">
-            {/* Left side - Text content */}
+        <div className="mx-auto w-[90%] lg:w-[85%]">
+          <div className="grid gap-8 lg:grid-cols-[45%_55%] items-center">
+            {/* Left side - Text content (45%) */}
             <div>
-              <h1 className="mb-6 text-3xl font-medium leading-snug lg:text-4xl">
+              <h1 className="mb-4 text-2xl font-medium leading-snug lg:text-3xl">
                 Introduction
               </h1>
-              <p className="text-base leading-relaxed text-text-secondary mb-6 max-w-md">
+              <p className="text-sm leading-relaxed text-text-secondary mb-4">
                 Capital alone seldom suffices. Guided learning, emotional support, and experience-sharing are key to sustained success. That&apos;s where mentorship steps in.
               </p>
               <Link
-                href="/login"
-                className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-6 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
+                href="/browse-programs"
+                className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-5 py-2.5 text-sm font-medium text-black transition hover:bg-black hover:text-white"
               >
                 <svg
-                  width="16"
-                  height="16"
+                  width="14"
+                  height="14"
                   viewBox="0 0 16 18"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -96,19 +96,19 @@ export default function MentorshipPage() {
               </Link>
             </div>
 
-            {/* Right side - Image */}
+            {/* Right side - Image (55%) */}
             <div className="flex justify-center lg:justify-end">
               <div
-                className={`transition-all duration-1000 ease-out ${
+                className={`w-full transition-all duration-1000 ease-out ${
                   introVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"
                 }`}
               >
                 <Image
                   src="/images/imgs/mentors header image .webp"
                   alt="Mentorship session"
-                  width={450}
-                  height={350}
-                  className="w-full max-w-[450px] h-auto rounded-2xl object-cover border border-black"
+                  width={800}
+                  height={500}
+                  className="w-full h-auto rounded-2xl object-cover"
                 />
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function MentorshipPage() {
             Mentors help sharpen ideas, open doors, challenge assumptions, and build confidence. Studies show mentored youth are more likely to succeed long term.
           </p>
           <Link
-            href="/login"
+            href="/dashboard/mentorship"
             className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
           >
             <svg
@@ -242,7 +242,7 @@ export default function MentorshipPage() {
           {/* CTA Buttons */}
           <div className="mt-10 flex flex-wrap justify-center gap-4 items-center">
             <Link
-              href="/login"
+              href="/browse-programs"
               className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-6 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
             >
               <svg
@@ -261,7 +261,7 @@ export default function MentorshipPage() {
               <span>Apply to be a Mentor</span>
             </Link>
             <Link
-              href="/login"
+              href="/dashboard/mentorship"
               className="text-sm font-medium text-black underline transition hover:no-underline hover:border-2 hover:border-black hover:rounded-[10px] hover:px-6 hover:py-3"
             >
               Request Mentorship

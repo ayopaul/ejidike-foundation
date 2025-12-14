@@ -219,50 +219,169 @@ export default function AdminApplicationDetailPage() {
 
       {/* Application Data */}
       {application.application_data && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Application Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {application.application_data.motivation && (
-              <div>
-                <h3 className="font-medium mb-2">Motivation</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {application.application_data.motivation}
-                </p>
-              </div>
-            )}
-            <Separator />
-            {application.application_data.goals && (
-              <div>
-                <h3 className="font-medium mb-2">Goals</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {application.application_data.goals}
-                </p>
-              </div>
-            )}
-            <Separator />
-            {application.application_data.experience && (
-              <div>
-                <h3 className="font-medium mb-2">Experience</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {application.application_data.experience}
-                </p>
-              </div>
-            )}
-            {application.application_data.additional_info && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-medium mb-2">Additional Information</h3>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {application.application_data.additional_info}
-                  </p>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <>
+          {/* Academic Background */}
+          {(application.application_data.current_institution || application.application_data.program_of_study) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Academic Background</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {application.application_data.current_institution && (
+                  <div>
+                    <p className="text-sm font-medium">Current Institution</p>
+                    <p className="text-sm text-muted-foreground">{application.application_data.current_institution}</p>
+                  </div>
+                )}
+                {application.application_data.program_of_study && (
+                  <div>
+                    <p className="text-sm font-medium">Program of Study</p>
+                    <p className="text-sm text-muted-foreground">{application.application_data.program_of_study}</p>
+                  </div>
+                )}
+                {application.application_data.year_of_study && (
+                  <div>
+                    <p className="text-sm font-medium">Year of Study</p>
+                    <p className="text-sm text-muted-foreground">{application.application_data.year_of_study.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</p>
+                  </div>
+                )}
+                {application.application_data.previous_qualifications && (
+                  <div>
+                    <p className="text-sm font-medium">Previous Qualifications</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{application.application_data.previous_qualifications}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Grant Request Details */}
+          {(application.application_data.grant_type || application.application_data.purpose_of_grant) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Grant Request Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {application.application_data.grant_type && (
+                  <div>
+                    <p className="text-sm font-medium">Type of Grant Requested</p>
+                    <p className="text-sm text-muted-foreground">
+                      {application.application_data.grant_type === 'education_level_1' ? 'Education Grant - Level 1 (up to N500,000/year)' :
+                       application.application_data.grant_type === 'education_level_2' ? 'Education Grant - Level 2 (up to N300,000)' :
+                       application.application_data.grant_type === 'business_grant' ? 'Business Grant (up to N1,000,000)' :
+                       application.application_data.grant_type}
+                    </p>
+                  </div>
+                )}
+                {application.application_data.amount_requested && (
+                  <div>
+                    <p className="text-sm font-medium">Amount Requested</p>
+                    <p className="text-sm text-muted-foreground">₦{application.application_data.amount_requested}</p>
+                  </div>
+                )}
+                {application.application_data.purpose_of_grant && (
+                  <div>
+                    <p className="text-sm font-medium">Purpose of Grant</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{application.application_data.purpose_of_grant}</p>
+                  </div>
+                )}
+                {application.application_data.duration_of_support && (
+                  <div>
+                    <p className="text-sm font-medium">Duration of Support Needed</p>
+                    <p className="text-sm text-muted-foreground">{application.application_data.duration_of_support.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Personal Statement */}
+          {(application.application_data.academic_goals || application.application_data.how_grant_will_help || application.application_data.challenges_faced) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Statement</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {application.application_data.academic_goals && (
+                  <div>
+                    <h3 className="font-medium mb-2">Academic Goals & Career Aspirations</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{application.application_data.academic_goals}</p>
+                  </div>
+                )}
+                {application.application_data.how_grant_will_help && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-2">How This Grant Will Help</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{application.application_data.how_grant_will_help}</p>
+                    </div>
+                  </>
+                )}
+                {application.application_data.challenges_faced && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-2">Challenges Faced</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{application.application_data.challenges_faced}</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legacy Fields (for older applications) */}
+          {(application.application_data.motivation || application.application_data.goals || application.application_data.experience) && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Application Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {application.application_data.motivation && (
+                  <div>
+                    <h3 className="font-medium mb-2">Motivation</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {application.application_data.motivation}
+                    </p>
+                  </div>
+                )}
+                {application.application_data.goals && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-2">Goals</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {application.application_data.goals}
+                      </p>
+                    </div>
+                  </>
+                )}
+                {application.application_data.experience && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-2">Experience</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {application.application_data.experience}
+                      </p>
+                    </div>
+                  </>
+                )}
+                {application.application_data.additional_info && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-2">Additional Information</h3>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {application.application_data.additional_info}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Documents */}
@@ -275,31 +394,49 @@ export default function AdminApplicationDetailPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">{doc.file_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Uploaded {formatDate(doc.uploaded_at)}
-                      </p>
-                    </div>
+            <div className="space-y-4">
+              {/* Group documents by type */}
+              {[
+                { type: 'academic_transcript', label: 'Academic Transcripts' },
+                { type: 'enrollment_proof', label: 'Proof of Enrollment / Admission Letter' },
+                { type: 'recommendation_letter', label: 'Recommendation Letters' },
+                { type: 'financial_statement', label: 'Financial Need Statement' },
+                { type: 'state_of_origin', label: 'State of Origin Certificate' },
+                { type: 'additional_document', label: 'Additional Documents' },
+                { type: 'supporting_document', label: 'Other Documents' },
+              ].map(({ type, label }) => {
+                const typeDocs = documents.filter((doc: any) => doc.document_type === type);
+                if (typeDocs.length === 0) return null;
+                return (
+                  <div key={type} className="space-y-2">
+                    <h4 className="text-sm font-medium text-muted-foreground">{label}</h4>
+                    {typeDocs.map((doc: any) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">{doc.file_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Uploaded {formatDate(doc.uploaded_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadDocument(doc.file_path, doc.file_name)}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => downloadDocument(doc.file_path, doc.file_name)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

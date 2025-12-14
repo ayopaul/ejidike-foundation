@@ -94,7 +94,7 @@ export default function FundingPage() {
                 Our funding streams are designed to fuel transformation, not dependency.
               </p>
               <Link
-                href="/login"
+                href="/browse-programs"
                 className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-transparent px-6 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
               >
                 <svg
@@ -118,18 +118,29 @@ export default function FundingPage() {
             <div className="hidden lg:block w-[1px] bg-[#D9D4CF]"></div>
 
             {/* Right side - Grant types */}
-            <div className="flex-1 lg:pl-12 space-y-6">
+            <div className="flex-1 lg:pl-12 space-y-8">
               <div id="education-grants">
-                <h3 className="mb-2 text-2xl font-medium">Education Grants</h3>
-                <p className="text-sm leading-relaxed text-text-secondary">
-                  Covering full or partial tuition, learning materials, and digital access.
-                </p>
+                <h3 className="mb-3 text-2xl font-medium">Education Grants</h3>
+                <div className="space-y-4">
+                  <div className="border-l-2 border-[#0080FF] pl-4">
+                    <h4 className="font-medium text-base text-black mb-1">Level 1 Scholarship</h4>
+                    <p className="text-sm leading-relaxed text-text-secondary">
+                      Full coverage of tuition and living expenses up to N500,000 per annum. Duration determined upon review.
+                    </p>
+                  </div>
+                  <div className="border-l-2 border-[#0080FF] pl-4">
+                    <h4 className="font-medium text-base text-black mb-1">Level 2 Scholarship</h4>
+                    <p className="text-sm leading-relaxed text-text-secondary">
+                      Partial coverage of tuition and living expenses up to N300,000. Duration determined upon review.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div id="business-grants">
-                <h3 className="mb-2 text-2xl font-medium">Business Grants</h3>
+                <h3 className="mb-3 text-2xl font-medium">Business Grants</h3>
                 <p className="text-sm leading-relaxed text-text-secondary">
-                  Seed & early-stage funding for youth-led ventures with community impact.
+                  Up to N1,000,000 one-off grant for startup or expansion expenses. Funds can be used for tools/equipment acquisition and business location costs. Working capital available with stricter disbursement criteria.
                 </p>
               </div>
             </div>
@@ -162,106 +173,73 @@ export default function FundingPage() {
 
         <div className="mx-auto max-w-[1320px] relative z-10">
           <h2 className="mb-10 text-center text-3xl font-medium text-white lg:text-4xl">
-            Eligibility criteria
+            Eligibility Criteria
           </h2>
 
-          {/* Two column criteria list */}
-          <div className="grid gap-6 lg:grid-cols-2 max-w-4xl mx-auto mb-10">
-            {/* Left column */}
-            <div className="space-y-4">
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "0ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Age range or student status</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "250ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Academic / performance threshold</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "500ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Venture maturity (for business grants)</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "750ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Demonstrated social impact potential</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "1000ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Commitment to reporting & mentorship</p>
+          {/* Demographics */}
+          <div className="max-w-4xl mx-auto mb-10">
+            <div className="bg-white/10 rounded-lg p-6 mb-8">
+              <h3 className="text-[#FFCE4C] font-medium text-lg mb-2">Demographics & Personal Background</h3>
+              <p className="text-white text-sm">
+                The program is open to <strong>Enugu State indigenes</strong>. Applicants must provide documentary evidence as proof of status.
+              </p>
+            </div>
+
+            {/* Education Grant Eligibility */}
+            <div className="mb-8">
+              <h3 className="text-[#FFCE4C] font-medium text-lg mb-4">Education Grant Requirements</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Field of Study:</strong> STEM (Science, Technology, Engineering, Mathematics) and Business subjects only</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Education Level:</strong> High school students entering or already enrolled in public tertiary education. No postgraduate study.</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Age:</strong> Must be between 17 and 22 years old at time of application</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Academic Performance (University/College of Education):</strong> Minimum CGPA of 3.0/4 or 3.5/5 (Second Class Upper)</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Academic Performance (Polytechnic):</strong> Minimum CGPA of 3.0 (Upper Credit) from OND, with HND admission secured</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>High School Applicants:</strong> Must have secured entry/enrollment and meet minimum entry requirements</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Exclusivity:</strong> Must not be a beneficiary of any other scholarship, bursary, or grant</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Institution:</strong> Must be enrolled in an accredited Nigerian Public Tertiary Institution</p>
+                </div>
               </div>
             </div>
 
-            {/* Right column */}
-            <div className="space-y-4">
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "125ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Grant Details / Structure</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "375ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Typical grant size / range</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "625ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Duration (e.g. one academic year, or 12 months)</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "875ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Disbursement schedule (e.g. installments)</p>
-              </div>
-              <div
-                className={`flex items-start gap-3 transition-all duration-500 ease-out ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}
-                style={{ transitionDelay: "1125ms" }}
-              >
-                <span className="text-green-400 mt-0.5">&#10003;</span>
-                <p className="text-white text-sm">Use limitations (capital, training, equipment, etc.)</p>
+            {/* Business Grant Eligibility */}
+            <div>
+              <h3 className="text-[#FFCE4C] font-medium text-lg mb-4">Business Grant Requirements</h3>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Training:</strong> Must have completed vocational training in a government-approved school or center</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Skills:</strong> Ability to demonstrate acquired vocational skills</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-green-400 mt-0.5">&#10003;</span>
+                  <p className="text-white text-sm"><strong>Business Knowledge:</strong> Basic business acumen is a prerequisite</p>
+                </div>
               </div>
             </div>
           </div>
@@ -269,7 +247,7 @@ export default function FundingPage() {
           {/* Apply Now button */}
           <div className="text-center">
             <Link
-              href="/login"
+              href="/browse-programs"
               className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
             >
               <svg
@@ -298,7 +276,7 @@ export default function FundingPage() {
             Application Process
           </h2>
           <p className="text-base leading-relaxed text-[#6E6E75] mb-10 max-w-2xl">
-            We require periodic progress reports, mentor check-ins, audits, and feedback loops. Failure to meet standards may result in suspension or recovery of funds.
+            Applications for education grants coincide with university admission and enrollment season. Business grant application timelines are announced on the foundation website.
           </p>
 
           {/* Steps */}
@@ -310,9 +288,12 @@ export default function FundingPage() {
               style={{ transitionDelay: "0ms" }}
             >
               <span className="text-2xl font-medium text-[#6E6E75]">01/</span>
-              <p className="text-sm leading-relaxed text-[#6E6E75] pt-1">
-                Photo booth next level artisan messenger bag, dream catcher paleo neutral thundercats
-              </p>
+              <div className="pt-1">
+                <p className="font-medium text-black mb-1">Online Application</p>
+                <p className="text-sm leading-relaxed text-[#6E6E75]">
+                  Submit your online application along with all required supporting documents (academic transcripts, personal statement, proof of enrollment, recommendation letters, financial need statement) by the deadline.
+                </p>
+              </div>
             </div>
 
             <div
@@ -322,9 +303,12 @@ export default function FundingPage() {
               style={{ transitionDelay: "250ms" }}
             >
               <span className="text-2xl font-medium text-[#6E6E75]">02/</span>
-              <p className="text-sm leading-relaxed text-[#6E6E75] pt-1">
-                Photo booth next level artisan messenger bag, dream catcher paleo neutral thundercats
-              </p>
+              <div className="pt-1">
+                <p className="font-medium text-black mb-1">Interview</p>
+                <p className="text-sm leading-relaxed text-[#6E6E75]">
+                  Shortlisted candidates will be invited to an interview to discuss their qualifications, aspirations, and how the grant will help them achieve their goals.
+                </p>
+              </div>
             </div>
 
             <div
@@ -334,40 +318,19 @@ export default function FundingPage() {
               style={{ transitionDelay: "500ms" }}
             >
               <span className="text-2xl font-medium text-[#6E6E75]">03/</span>
-              <p className="text-sm leading-relaxed text-[#6E6E75] pt-1">
-                Photo booth next level artisan messenger bag, dream catcher paleo neutral thundercats
-              </p>
-            </div>
-
-            <div
-              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "750ms" }}
-            >
-              <span className="text-2xl font-medium text-[#6E6E75]">04/</span>
-              <p className="text-sm leading-relaxed text-[#6E6E75] pt-1">
-                Photo booth next level artisan messenger bag, dream catcher paleo neutral thundercats
-              </p>
-            </div>
-
-            <div
-              className={`flex items-start gap-[50px] border-b border-[#C8C3BD] pb-6 transition-all duration-500 ease-out ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "1000ms" }}
-            >
-              <span className="text-2xl font-medium text-[#6E6E75]">05/</span>
-              <p className="text-sm leading-relaxed text-[#6E6E75] pt-1">
-                Photo booth next level artisan messenger bag, dream catcher paleo neutral thundercats
-              </p>
+              <div className="pt-1">
+                <p className="font-medium text-black mb-1">Award Notification</p>
+                <p className="text-sm leading-relaxed text-[#6E6E75]">
+                  Successful applicants will receive an official award notification with instructions on how to accept the scholarship or grant and next steps for disbursement.
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Apply Now button */}
           <div className="mt-10 text-center">
             <Link
-              href="/login"
+              href="/browse-programs"
               className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
             >
               <svg

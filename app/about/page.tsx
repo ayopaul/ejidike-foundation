@@ -128,7 +128,7 @@ export default function AboutPage() {
                 {/* Overlay button - bottom right, extending outside */}
                 <div className="absolute -bottom-6 -right-4 lg:-bottom-8 lg:-right-6 z-10">
                   <Link
-                    href="/login"
+                    href="/browse-programs"
                     className="inline-flex flex-col items-center justify-center rounded-2xl bg-[#0080FF] px-5 py-3 text-center  transition hover:bg-[#0070e0]"
                   >
                     <span className="text-[11px] text-white/90">Mentorships available</span>
@@ -180,7 +180,7 @@ export default function AboutPage() {
               {/* Apply Now button - visible only on desktop */}
               <div className="pt-4 hidden lg:block">
                 <Link
-                  href="/login"
+                  href="/browse-programs"
                   className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
                 >
                   <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-colors">
@@ -213,7 +213,7 @@ export default function AboutPage() {
               {/* Apply Now button - visible only on mobile */}
               <div className="pt-4 lg:hidden">
                 <Link
-                  href="/login"
+                  href="/browse-programs"
                   className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
                 >
                   <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-colors">

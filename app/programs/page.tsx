@@ -8,17 +8,27 @@ import Link from "next/link";
 
 type TabType = "education" | "business" | "mentorship";
 
-const tabContent: Record<TabType, { description: string; cta: string; link: string }> = {
+const tabContent: Record<TabType, { description: string; subItems?: { title: string; text: string }[]; cta: string; link: string }> = {
   education: {
     description:
-      "We provide grants for tertiary education. Covering tuition, books, digital resources, and school fees. Beyond the money, scholars join a support community of peer learners and mentors.",
+      "Ejidike Educational Foundation offers scholarships to support students in completing their tertiary education. Applications are judged on both need and merit.",
+    subItems: [
+      {
+        title: "Level 1 Scholarship",
+        text: "Full coverage of tuition and living expenses up to a maximum of N500,000 per annum. Duration of support determined upon application review.",
+      },
+      {
+        title: "Level 2 Scholarship",
+        text: "Partial coverage of tuition and living expenses up to a maximum of N300,000. Duration of support determined upon application review.",
+      },
+    ],
     cta: "Apply for educational grant",
     link: "/login",
   },
   business: {
     description:
-      "Seed funding and early-stage support for youth-led ventures building solutions with clear community impact. We back founders with capital, coaching, and connections.",
-    cta: "Learn about business grants",
+      "The foundation can approve up to N1,000,000 as a one-off grant for startup or expansion expenses. Funds can be used to acquire tools/equipment and cover business location costs. Special consideration for working capital with stricter disbursement criteria.",
+    cta: "Apply for business grant",
     link: "/login",
   },
   mentorship: {
@@ -151,9 +161,20 @@ export default function ProgramsPage() {
 
               {/* Tab content */}
               <div className="mt-6 bg-[#FAFAFA] p-6 rounded-lg">
-                <p className="text-sm leading-relaxed text-text-secondary mb-6">
+                <p className="text-sm leading-relaxed text-text-secondary mb-4">
                   {tabContent[activeTab].description}
                 </p>
+                {tabContent[activeTab].subItems && (
+                  <div className="space-y-4 mb-6">
+                    {tabContent[activeTab].subItems.map((item, index) => (
+                      <div key={index} className="border-l-2 border-[#0080FF] pl-4">
+                        <h4 className="font-medium text-sm text-black mb-1">{item.title}</h4>
+                        <p className="text-sm text-text-secondary">{item.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!tabContent[activeTab].subItems && <div className="mb-6" />}
                 <Link
                   href={tabContent[activeTab].link}
                   className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-transparent px-6 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
@@ -207,6 +228,13 @@ export default function ProgramsPage() {
             How the program works
           </h2>
 
+          {/* Application Window Info */}
+          <div className="max-w-2xl mx-auto mb-10">
+            <p className="text-slate-300 text-sm text-center leading-relaxed">
+              Applications for education grants coincide with university admission and enrollment season in the later months of the year. Business grant application timelines are announced on the foundation website.
+            </p>
+          </div>
+
           {/* Steps */}
           <div className="max-w-2xl mx-auto space-y-6">
             <div
@@ -215,29 +243,20 @@ export default function ProgramsPage() {
               }`}
               style={{ transitionDelay: "0ms" }}
             >
-              <p className="text-[#FFCE4C] text-sm font-medium mb-1">One</p>
+              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Step One</p>
               <p className="text-white text-base">
-                Application & Selection — eligibility review, interviews
+                Online Application — Submit your application along with all required supporting documents (academic transcripts, personal statement, proof of enrollment) by the deadline.
               </p>
             </div>
             <div
               className={`transition-all duration-700 ease-out ${
                 stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}
-              style={{ transitionDelay: "100ms" }}
+              style={{ transitionDelay: "150ms" }}
             >
-              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Two</p>
-              <p className="text-white text-base">Onboarding & Orientation</p>
-            </div>
-            <div
-              className={`transition-all duration-700 ease-out ${
-                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "200ms" }}
-            >
-              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Three</p>
+              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Step Two</p>
               <p className="text-white text-base">
-                Support & Implementation — disbursement, mentorship, check-ins
+                Interview — Shortlisted candidates will be invited to an interview to discuss their qualifications and aspirations.
               </p>
             </div>
             <div
@@ -246,26 +265,17 @@ export default function ProgramsPage() {
               }`}
               style={{ transitionDelay: "300ms" }}
             >
-              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Four</p>
+              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Step Three</p>
               <p className="text-white text-base">
-                Progress & Reporting — milestone metrics, community sharing
+                Award Notification — Successful applicants receive an official award notification with instructions on how to accept the scholarship or grant.
               </p>
-            </div>
-            <div
-              className={`transition-all duration-700 ease-out ${
-                stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: "400ms" }}
-            >
-              <p className="text-[#FFCE4C] text-sm font-medium mb-1">Five</p>
-              <p className="text-white text-base">Graduation & Alumni Network</p>
             </div>
           </div>
 
           {/* Apply Now button */}
           <div className="mt-12 text-center">
             <Link
-              href="/login"
+              href="/browse-programs"
               className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white"
             >
               <svg

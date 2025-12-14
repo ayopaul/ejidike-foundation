@@ -62,9 +62,8 @@ export default function HomePage() {
 
             <h1 className="mb-6 text-4xl font-medium leading-[1.5] sm:text-5xl lg:text-hero">
               Empowering<br />
-              Nigeria's Youth to<br />
-              Learn, Lead &<br />
-              Innovate
+              Youth to Learn,<br />
+              Lead & Innovate
             </h1>
 
             <p className="mb-8 max-w-md text-base leading-relaxed text-text-secondary">
@@ -72,7 +71,7 @@ export default function HomePage() {
               that young change-makers can transform dreams into impact.
             </p>
 
-            <Link href="/login" className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white">
+            <Link href="/browse-programs" className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white">
               <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-colors">
                 <path d="M6.80469 2.60547L7.57812 1.83203C7.92969 1.51562 8.45703 1.51562 8.77344 1.83203L15.6289 8.65234C15.9453 9.00391 15.9453 9.53125 15.6289 9.84766L8.77344 16.7031C8.45703 17.0195 7.92969 17.0195 7.57812 16.7031L6.80469 15.9297C6.48828 15.5781 6.48828 15.0508 6.80469 14.6992L11.0586 10.6562H0.96875C0.476562 10.6562 0.125 10.3047 0.125 9.8125V8.6875C0.125 8.23047 0.476562 7.84375 0.96875 7.84375H11.0586L6.80469 3.83594C6.48828 3.48438 6.45312 2.95703 6.80469 2.60547Z" fill="currentColor"/>
               </svg>
@@ -262,7 +261,7 @@ export default function HomePage() {
             <h2 className="mb-6 text-3xl font-medium leading-snug lg:text-4xl">
               We back the next generation of Nigerian leaders and creators.
             </h2>
-            <Link href="/login" className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white">
+            <Link href="/browse-programs" className="inline-flex items-center gap-2 rounded-[10px] border-2 border-black bg-brand-yellow px-7 py-3 text-sm font-medium text-black transition hover:bg-black hover:text-white">
               <svg width="16" height="18" viewBox="0 0 16 18" fill="none" xmlns="http://www.w3.org/2000/svg" className="transition-colors">
                 <path d="M6.80469 2.60547L7.57812 1.83203C7.92969 1.51562 8.45703 1.51562 8.77344 1.83203L15.6289 8.65234C15.9453 9.00391 15.9453 9.53125 15.6289 9.84766L8.77344 16.7031C8.45703 17.0195 7.92969 17.0195 7.57812 16.7031L6.80469 15.9297C6.48828 15.5781 6.48828 15.0508 6.80469 14.6992L11.0586 10.6562H0.96875C0.476562 10.6562 0.125 10.3047 0.125 9.8125V8.6875C0.125 8.23047 0.476562 7.84375 0.96875 7.84375H11.0586L6.80469 3.83594C6.48828 3.48438 6.45312 2.95703 6.80469 2.60547Z" fill="currentColor"/>
               </svg>
