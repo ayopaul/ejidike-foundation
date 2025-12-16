@@ -15,6 +15,9 @@ export interface Profile {
   location?: string;
   avatar_url?: string;
   date_of_birth?: string;
+  email_verified?: boolean;
+  email_verification_token?: string;
+  email_verification_expires?: string;
   created_at: string;
   updated_at: string;
 }

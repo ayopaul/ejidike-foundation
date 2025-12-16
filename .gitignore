@@ -2,13 +2,28 @@ node_modules
 .next
 .env
 .env.*
+.env.local
+.env.test
+.env.production
 dist
 build
 *.log
 *.lock
 /CLAUDE.md
 
-# Test outputs (may contain sensitive screenshots)
+# Test outputs (may contain sensitive screenshots/videos/traces)
 test-results/
 playwright-report/
 tests/screenshots/
+tests/videos/
+blob-report/
+playwright/.cache/
+
+# Test state and auth
+tests/e2e/.auth/
+storageState.json
+*.storageState.json
+
+# Playwright artifacts
+playwright-artifacts/
+test-output/

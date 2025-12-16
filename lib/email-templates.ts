@@ -582,3 +582,83 @@ export function mentorshipRequestRejectedEmail(params: {
     text: `Dear ${menteeName},\n\nThe mentor ${mentorName} is unable to accept your mentorship request at this time.\n\nThis may be due to capacity or other commitments. We encourage you to connect with other available mentors.\n\nFind mentors: ${APP_URL}/mentorship`
   };
 }
+
+// Email verification template
+export function emailVerificationEmail(params: {
+  userName: string;
+  verificationUrl: string;
+  expiresIn: string;
+}): { subject: string; html: string; text: string } {
+  const { userName, verificationUrl, expiresIn } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">📧 Verify Your Email Address</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Hi ${userName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Thank you for registering with ${APP_NAME}! Please verify your email address to complete your registration and access all features.
+    </p>
+
+    ${alertBox(`This verification link will expire in ${expiresIn}. If it expires, you can request a new one from the login page.`, 'info')}
+
+    <div style="text-align: center; margin: 30px 0;">
+      ${button('Verify Email Address', verificationUrl, '#28a745')}
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 20px 0 0;">
+      If the button doesn't work, copy and paste this link into your browser:
+    </p>
+    <p style="font-size: 12px; line-height: 1.6; color: #0070f3; word-break: break-all; margin: 10px 0;">
+      ${verificationUrl}
+    </p>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      If you didn't create an account with us, please ignore this email.
+    </p>
+  `;
+
+  return {
+    subject: `Verify Your Email - ${APP_NAME}`,
+    html: emailWrapper(content),
+    text: `Hi ${userName},\n\nThank you for registering with ${APP_NAME}! Please verify your email address by clicking the link below:\n\n${verificationUrl}\n\nThis link will expire in ${expiresIn}.\n\nIf you didn't create an account, please ignore this email.`
+  };
+}
+
+// Resend verification email template
+export function resendVerificationEmail(params: {
+  userName: string;
+  verificationUrl: string;
+  expiresIn: string;
+}): { subject: string; html: string; text: string } {
+  const { userName, verificationUrl, expiresIn } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">📧 New Verification Link</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Hi ${userName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      You requested a new email verification link. Click the button below to verify your email address.
+    </p>
+
+    ${alertBox(`This new link will expire in ${expiresIn}.`, 'info')}
+
+    <div style="text-align: center; margin: 30px 0;">
+      ${button('Verify Email Address', verificationUrl, '#28a745')}
+    </div>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 20px 0 0;">
+      If the button doesn't work, copy and paste this link into your browser:
+    </p>
+    <p style="font-size: 12px; line-height: 1.6; color: #0070f3; word-break: break-all; margin: 10px 0;">
+      ${verificationUrl}
+    </p>
+  `;
+
+  return {
+    subject: `New Verification Link - ${APP_NAME}`,
+    html: emailWrapper(content),
+    text: `Hi ${userName},\n\nHere's your new verification link:\n\n${verificationUrl}\n\nThis link will expire in ${expiresIn}.`
+  };
+}

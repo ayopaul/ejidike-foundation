@@ -1,15 +1,18 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/app/api/auth/register/route.ts
- * PURPOSE: User registration/signup - handles profile creation manually
+ * PURPOSE: User registration/signup - handles profile creation with email verification
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { randomBytes } from 'crypto';
+import { sendEmail } from '@/lib/email';
+import { emailVerificationEmail } from '@/lib/email-templates';
 
 // Use service role for admin operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // You need this key
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
@@ -17,6 +20,20 @@ const supabaseAdmin = createClient(
     }
   }
 );
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+// Generate a secure verification token
+function generateVerificationToken(): string {
+  return randomBytes(32).toString('hex');
+}
+
+// Get expiration time (24 hours from now)
+function getExpirationTime(): Date {
+  const expires = new Date();
+  expires.setHours(expires.getHours() + 24);
+  return expires;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,11 +98,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate verification token
+    const verificationToken = generateVerificationToken();
+    const verificationExpires = getExpirationTime();
+
     // Create auth user with admin client
+    // email_confirm: false means user needs to verify email
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email for testing
+      email_confirm: false, // Require email verification
       user_metadata: {
         full_name,
         role
@@ -114,14 +136,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create or update profile using admin client (bypasses RLS)
-    // Use upsert in case a database trigger already created the profile
+    // Store verification token in profile
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('profiles')
       .upsert({
         user_id: authData.user.id,
         email,
         full_name,
-        role
+        role,
+        email_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_expires: verificationExpires.toISOString()
       }, {
         onConflict: 'user_id',
         ignoreDuplicates: false
@@ -144,15 +169,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Send verification email
+    const verificationUrl = `${APP_URL}/verify-email?token=${verificationToken}`;
+    const emailContent = emailVerificationEmail({
+      userName: full_name,
+      verificationUrl,
+      expiresIn: '24 hours'
+    });
+
+    const emailResult = await sendEmail({
+      to: email,
+      toName: full_name,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    });
+
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      // Don't fail registration if email fails, user can request resend
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Registration successful. You can now login.',
+      message: 'Registration successful! Please check your email to verify your account.',
+      emailSent: emailResult.success,
       user: {
         id: authData.user.id,
         email: authData.user.email
       }
     });
   } catch (error: any) {
+    console.error('Registration error:', error);
     return NextResponse.json(
       { error: error.message || 'Registration failed' },
       { status: 500 }

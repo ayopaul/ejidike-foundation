@@ -55,9 +55,11 @@ export async function middleware(request: NextRequest) {
     '/',
     '/login',
     '/register',
+    '/verify-email',
     '/api/auth/callback',
     '/api/auth/login',
     '/api/auth/register',
+    '/api/auth/verify-email',
     '/api/auth/reset-password',
     '/api/health'
   ];

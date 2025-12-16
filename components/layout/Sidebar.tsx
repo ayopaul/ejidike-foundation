@@ -88,13 +88,16 @@ export function Sidebar({ role, profile }: SidebarProps) {
   const { isOpen, setIsOpen } = useSidebar();
 
   // Fetch pending mentees count for mentors
+  // Extract profileId to use as stable dependency
+  const profileId = profile?.id;
+
   useEffect(() => {
-    if (role === 'mentor' && profile?.id) {
+    if (role === 'mentor' && profileId) {
       const fetchPendingCount = async () => {
         const { count } = await supabase
           .from('mentorship_matches')
           .select('*', { count: 'exact', head: true })
-          .eq('mentor_id', profile.id)
+          .eq('mentor_id', profileId)
           .eq('status', 'pending');
 
         setPendingMenteesCount(count || 0);
@@ -103,15 +106,16 @@ export function Sidebar({ role, profile }: SidebarProps) {
       fetchPendingCount();
 
       // Set up realtime subscription to update count
+      // Use unique channel name to prevent conflicts
       const channel = supabase
-        .channel('mentorship_matches_changes')
+        .channel(`mentorship_matches_changes-${profileId}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'mentorship_matches',
-            filter: `mentor_id=eq.${profile.id}`
+            filter: `mentor_id=eq.${profileId}`
           },
           () => {
             fetchPendingCount();
@@ -123,7 +127,7 @@ export function Sidebar({ role, profile }: SidebarProps) {
         supabase.removeChannel(channel);
       };
     }
-  }, [role, profile?.id]);
+  }, [role, profileId]);
 
   // Close sidebar when route changes on mobile
   useEffect(() => {

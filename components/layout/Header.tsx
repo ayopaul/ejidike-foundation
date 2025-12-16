@@ -152,21 +152,24 @@ export function Header() {
   };
 
   // Subscribe to real-time notifications
+  // Use profile.id instead of profile object to prevent infinite re-renders
+  const profileId = profile?.id;
+
   useEffect(() => {
-    if (!profile) return;
+    if (!profileId) return;
 
     fetchNotifications();
 
     // Subscribe to new notifications
     const channel = supabase
-      .channel('notifications')
+      .channel(`notifications-${profileId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${profile.id}`
+          filter: `user_id=eq.${profileId}`
         },
         (payload) => {
           const newNotification = payload.new as Notification;
@@ -184,7 +187,7 @@ export function Header() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile]);
+  }, [profileId]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {

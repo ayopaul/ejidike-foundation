@@ -137,11 +137,19 @@ export default function RegisterPage() {
             <div className="flex justify-center mb-4">
               <CheckCircle2 className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Registration Successful!</CardTitle>
-            <CardDescription>
-              Your account has been created. Redirecting to login...
+            <CardTitle className="text-2xl">Check Your Email!</CardTitle>
+            <CardDescription className="text-base">
+              We&apos;ve sent a verification link to <strong>{formData.email}</strong>.
+              <br /><br />
+              Please check your inbox and click the link to verify your email address before logging in.
             </CardDescription>
           </CardHeader>
+          <CardContent className="text-center text-sm text-muted-foreground">
+            <p>Didn&apos;t receive the email? Check your spam folder or</p>
+            <Link href="/verify-email" className="text-primary hover:underline font-medium">
+              request a new verification link
+            </Link>
+          </CardContent>
         </Card>
       </div>
     );
