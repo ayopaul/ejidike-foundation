@@ -72,6 +72,7 @@ const navigationConfig: Record<UserRole, NavItem[]> = {
     { title: 'Events', href: '/admin/content/events', icon: Calendar },
     { title: 'Contact Messages', href: '/admin/content/contact-messages', icon: MessageSquare },
     { title: 'Content', href: '/admin/content', icon: BookOpen },
+    { title: 'Site Settings', href: '/admin/settings', icon: Settings },
   ],
 };
 

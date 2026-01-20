@@ -13,6 +13,11 @@ const nunitoSans = Nunito_Sans({
 export const metadata: Metadata = {
   title: "Ejidike Foundation",
   description: "Empowering Nigeria's Youth to Learn, Lead & Innovate",
+  icons: {
+    icon: '/images/logos/logo.webp',
+    shortcut: '/images/logos/logo.webp',
+    apple: '/images/logos/logo.webp',
+  },
 };
 
 export default function RootLayout({

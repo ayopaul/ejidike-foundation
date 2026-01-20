@@ -10,6 +10,7 @@ build
 *.log
 *.lock
 /CLAUDE.md
+CLIENT_EMAIL_BALANCE_REQUEST.md
 
 # Test outputs (may contain sensitive screenshots/videos/traces)
 test-results/
@@ -27,3 +28,6 @@ storageState.json
 # Playwright artifacts
 playwright-artifacts/
 test-output/
+
+# Supabase migrations (applied directly in dashboard)
+supabase/migrations/

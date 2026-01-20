@@ -219,25 +219,39 @@ export default function EventsPage() {
           <div className="flex items-center justify-between mb-8 bg-[#F5EDE6] rounded-lg px-4 py-3">
             <div className="flex items-center gap-4">
               {/* Left arrow - View past events */}
-              <button
-                onClick={handleViewPast}
-                className={`p-1 transition ${viewMode === "past" ? "text-gray-900" : "text-gray-600 hover:text-gray-900"}`}
-                title="View past events"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={handleViewPast}
+                  className={`p-1 transition ${viewMode === "past" ? "text-gray-900" : "text-gray-600 hover:text-gray-900"}`}
+                  aria-label="View past events"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  View past events
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                </div>
+              </div>
               {/* Right arrow - View future events */}
-              <button
-                onClick={handleViewFuture}
-                className={`p-1 transition ${viewMode === "upcoming" ? "text-gray-900" : "text-gray-600 hover:text-gray-900"}`}
-                title="View upcoming events"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </button>
+              <div className="relative group">
+                <button
+                  onClick={handleViewFuture}
+                  className={`p-1 transition ${viewMode === "upcoming" ? "text-gray-900" : "text-gray-600 hover:text-gray-900"}`}
+                  aria-label="View upcoming events"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  View upcoming events
+                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900"></div>
+                </div>
+              </div>
               {/* Today button */}
               <button
                 onClick={handleToday}

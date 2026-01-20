@@ -1,7 +1,7 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/middleware.ts
  * PURPOSE: Protect routes based on authentication and role
- * FEATURE: Password protection for pre-launch access
+ * FEATURE: Password protection for pre-launch access (env var OR database setting)
  */
 
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
@@ -11,22 +11,77 @@ import type { NextRequest } from 'next/server';
 // Password protection cookie name
 const SITE_ACCESS_COOKIE = 'site_access_granted';
 
+// Cache cookie for coming soon status (avoids DB hit on every request)
+const COMING_SOON_CACHE_COOKIE = 'coming_soon_status';
+const CACHE_TTL_SECONDS = 60; // Cache for 60 seconds
+
+// Helper to check coming soon mode from database (only when cache expired)
+async function isComingSoonEnabled(
+  supabase: ReturnType<typeof createMiddlewareClient>,
+  request: NextRequest
+): Promise<{ enabled: boolean; shouldCache: boolean }> {
+  // Check cache cookie first
+  const cacheCookie = request.cookies.get(COMING_SOON_CACHE_COOKIE);
+  if (cacheCookie) {
+    return { enabled: cacheCookie.value === 'true', shouldCache: false };
+  }
+
+  // Cache miss - query database
+  try {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'coming_soon')
+      .single();
+
+    if (data?.value) {
+      const settings = data.value as { enabled: boolean; password: string };
+      return { enabled: settings.enabled && !!settings.password, shouldCache: true };
+    }
+  } catch {
+    // Table might not exist, fall through to env check
+  }
+  return { enabled: false, shouldCache: true };
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req: request, res });
 
   // ====== PASSWORD PROTECTION (Coming Soon Mode) ======
-  // Check if site password is set (enables coming soon mode)
-  const sitePassword = process.env.SITE_PASSWORD;
+  // Check if site password is set via env var
+  const envSitePassword = process.env.SITE_PASSWORD;
 
-  if (sitePassword) {
+  // Check database setting for coming soon mode (with caching)
+  const { enabled: dbComingSoonEnabled, shouldCache } = await isComingSoonEnabled(supabase, request);
+
+  // Coming soon is active if either env var is set OR database setting is enabled
+  const comingSoonActive = !!envSitePassword || dbComingSoonEnabled;
+
+  // Set cache cookie if we queried the database
+  if (shouldCache) {
+    res.cookies.set(COMING_SOON_CACHE_COOKIE, dbComingSoonEnabled ? 'true' : 'false', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: CACHE_TTL_SECONDS,
+      path: '/',
+    });
+  }
+
+  if (comingSoonActive) {
     // Routes that bypass password protection
     const bypassRoutes = [
       '/coming-soon',
       '/api/site-access',
+      '/api/site-settings',
       '/_next',
       '/favicon.ico',
       '/images',
       '/api/health',
+      '/admin', // Allow admin access to toggle the setting
+      '/login', // Allow login for admins
     ];
 
     const shouldBypass = bypassRoutes.some(route => path.startsWith(route));
@@ -43,9 +98,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ====== EXISTING AUTH LOGIC ======
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res });
-
   const {
     data: { session }
   } = await supabase.auth.getSession();
