@@ -1,87 +1,330 @@
 /**
  * FILE PATH: /ejdk/ejidike-foundation/lib/email-templates.ts
  * PURPOSE: Email templates for all notification types
+ * TEMPLATE: Based on Postmark's professional email templates
  */
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const APP_NAME = 'Ejidike Foundation';
 const CURRENT_YEAR = new Date().getFullYear();
+const BRAND_COLOR = '#0070f3';
+const SUPPORT_EMAIL = 'support@ejidikefoundation.com';
+const LOGO_URL = `${APP_URL}/images/logos/logo.webp`;
 
-// Base email wrapper for consistent styling
-function emailWrapper(content: string): string {
+// Professional email wrapper based on Postmark template
+function emailWrapper(content: string, preheader: string = ''): string {
   return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${APP_NAME}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <!-- Header -->
-          <tr>
-            <td style="padding: 40px 40px 20px; text-align: center; border-bottom: 3px solid #0070f3;">
-              <h1 style="margin: 0; color: #0070f3; font-size: 28px; font-weight: bold;">${APP_NAME}</h1>
-            </td>
-          </tr>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>${APP_NAME}</title>
+    <style type="text/css" rel="stylesheet" media="all">
+    @import url("https://fonts.googleapis.com/css?family=Nunito+Sans:400,700&display=swap");
 
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              ${content}
-            </td>
-          </tr>
+    body {
+      width: 100% !important;
+      height: 100%;
+      margin: 0;
+      -webkit-text-size-adjust: none;
+      background-color: #F2F4F6;
+      color: #51545E;
+    }
 
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px;">
-              <p style="margin: 0 0 10px; font-size: 12px; color: #666; text-align: center;">
-                This is an automated email from ${APP_NAME}. Please do not reply to this email.
-              </p>
-              <p style="margin: 0; font-size: 12px; color: #666; text-align: center;">
-                © ${CURRENT_YEAR} ${APP_NAME}. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
+    a { color: ${BRAND_COLOR}; }
+    a img { border: none; }
+    td { word-break: break-word; }
+
+    .preheader {
+      display: none !important;
+      visibility: hidden;
+      mso-hide: all;
+      font-size: 1px;
+      line-height: 1px;
+      max-height: 0;
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    body, td, th {
+      font-family: "Nunito Sans", Helvetica, Arial, sans-serif;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #333333;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #333333;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    p, ul, ol {
+      margin: .4em 0 1.1875em;
+      font-size: 16px;
+      line-height: 1.625;
+      color: #51545E;
+    }
+
+    .button {
+      background-color: ${BRAND_COLOR};
+      border-top: 10px solid ${BRAND_COLOR};
+      border-right: 18px solid ${BRAND_COLOR};
+      border-bottom: 10px solid ${BRAND_COLOR};
+      border-left: 18px solid ${BRAND_COLOR};
+      display: inline-block;
+      color: #FFF !important;
+      text-decoration: none;
+      border-radius: 3px;
+      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.16);
+      -webkit-text-size-adjust: none;
+      box-sizing: border-box;
+    }
+
+    .button--green {
+      background-color: #22BC66;
+      border-color: #22BC66;
+    }
+
+    .button--red {
+      background-color: #FF6136;
+      border-color: #FF6136;
+    }
+
+    .attributes {
+      margin: 0 0 21px;
+    }
+
+    .attributes_content {
+      background-color: #F4F4F7;
+      padding: 16px;
+    }
+
+    .attributes_item {
+      padding: 0;
+    }
+
+    .email-wrapper {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #F2F4F6;
+    }
+
+    .email-masthead {
+      padding: 25px 0;
+      text-align: center;
+    }
+
+    .email-masthead_name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #A8AAAF;
+      text-decoration: none;
+      text-shadow: 0 1px 0 white;
+    }
+
+    .email-body {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .email-body_inner {
+      width: 570px;
+      margin: 0 auto;
+      padding: 0;
+      background-color: #FFFFFF;
+    }
+
+    .email-footer {
+      width: 570px;
+      margin: 0 auto;
+      padding: 0;
+      text-align: center;
+    }
+
+    .email-footer p {
+      color: #A8AAAF;
+    }
+
+    .body-action {
+      width: 100%;
+      margin: 30px auto;
+      padding: 0;
+      text-align: center;
+    }
+
+    .body-sub {
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 1px solid #EAEAEC;
+    }
+
+    .content-cell {
+      padding: 45px;
+    }
+
+    .f-fallback { font-family: Arial, sans-serif; }
+
+    @media only screen and (max-width: 600px) {
+      .email-body_inner, .email-footer { width: 100% !important; }
+    }
+
+    @media only screen and (max-width: 500px) {
+      .button { width: 100% !important; text-align: center !important; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body, .email-body, .email-body_inner, .email-content, .email-wrapper, .email-masthead, .email-footer {
+        background-color: #333333 !important;
+        color: #FFF !important;
+      }
+      p, ul, ol, h1, h2, h3, span { color: #FFF !important; }
+      .attributes_content { background-color: #222 !important; }
+      .email-masthead_name { text-shadow: none !important; }
+    }
+    </style>
+  </head>
+  <body>
+    <span class="preheader">${preheader}</span>
+    <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center">
+          <table class="email-content" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            <tr>
+              <td class="email-masthead">
+                <a href="${APP_URL}" style="display: inline-block;">
+                  <img src="${LOGO_URL}" alt="${APP_NAME}" width="150" height="auto" style="max-width: 150px; height: auto; border: 0; display: block;" />
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-body" width="570" cellpadding="0" cellspacing="0">
+                <table class="email-body_inner" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td class="content-cell">
+                      <div class="f-fallback">
+                        ${content}
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table class="email-footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr>
+                    <td class="content-cell" align="center">
+                      <p class="f-fallback sub align-center">
+                        ${APP_NAME}
+                        <br>Empowering Nigeria's Youth to Learn, Lead & Innovate
+                      </p>
+                      <p class="f-fallback sub align-center" style="font-size: 12px;">
+                        © ${CURRENT_YEAR} ${APP_NAME}. All rights reserved.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
   `;
 }
 
-// Button component
-function button(text: string, url: string, color: string = '#0070f3'): string {
+// Button component (Postmark bulletproof button style)
+function button(text: string, url: string, color: string = BRAND_COLOR): string {
+  const colorClass = color === '#22BC66' ? 'button--green' : color === '#FF6136' ? 'button--red' : '';
   return `
-    <a href="${url}"
-       style="display: inline-block; padding: 14px 28px; background-color: ${color}; color: #ffffff;
-              text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0;">
-      ${text}
-    </a>
+    <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+            <tr>
+              <td align="center">
+                <a href="${url}" class="f-fallback button ${colorClass}" target="_blank" style="background-color: ${color}; border-color: ${color};">${text}</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
-// Alert box component
+// Info box / attributes component
 function alertBox(message: string, type: 'success' | 'warning' | 'error' | 'info' = 'info'): string {
   const colors = {
-    success: { bg: '#d4edda', border: '#28a745', text: '#155724' },
+    success: { bg: '#d4edda', border: '#22BC66', text: '#155724' },
     warning: { bg: '#fff3cd', border: '#ffc107', text: '#856404' },
-    error: { bg: '#f8d7da', border: '#dc3545', text: '#721c24' },
-    info: { bg: '#d1ecf1', border: '#17a2b8', text: '#0c5460' }
+    error: { bg: '#f8d7da', border: '#FF6136', text: '#721c24' },
+    info: { bg: '#F4F4F7', border: BRAND_COLOR, text: '#51545E' }
   };
-  const color = colors[type];
+  const c = colors[type];
 
   return `
-    <div style="padding: 15px; background-color: ${color.bg}; border-left: 4px solid ${color.border};
-                border-radius: 4px; margin: 20px 0;">
-      <p style="margin: 0; color: ${color.text}; font-size: 14px;">${message}</p>
-    </div>
+    <table class="attributes" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td class="attributes_content" style="background-color: ${c.bg}; border-left: 4px solid ${c.border}; padding: 16px;">
+          <p style="margin: 0; color: ${c.text}; font-size: 14px;">${message}</p>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+// Attributes/Info list component
+function attributesList(items: { label: string; value: string }[]): string {
+  const rows = items.map(item => `
+    <tr>
+      <td class="attributes_item">
+        <span class="f-fallback"><strong>${item.label}:</strong> ${item.value}</span>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <table class="attributes" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td class="attributes_content">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+            ${rows}
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+// Sub-copy component for fallback URLs
+function subCopy(text: string, url: string): string {
+  return `
+    <table class="body-sub" role="presentation">
+      <tr>
+        <td>
+          <p class="f-fallback sub" style="font-size: 13px; color: #A8AAAF;">${text}</p>
+          <p class="f-fallback sub" style="font-size: 13px; color: #A8AAAF;">${url}</p>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
@@ -250,8 +493,9 @@ export function partnerVerifiedEmail(params: {
 export function partnerRejectedEmail(params: {
   partnerName: string;
   organizationName: string;
+  rejectionReason?: string;
 }): { subject: string; html: string; text: string } {
-  const { partnerName, organizationName } = params;
+  const { partnerName, organizationName, rejectionReason } = params;
 
   const content = `
     <h2 style="color: #333; margin: 0 0 20px;">Organization Verification Update</h2>
@@ -261,6 +505,8 @@ export function partnerRejectedEmail(params: {
     <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
       Thank you for your interest in partnering with ${APP_NAME}. After reviewing your organization <strong>${organizationName}</strong>, we are unable to verify it at this time.
     </p>
+
+    ${rejectionReason ? alertBox(`<strong>Reason:</strong><br>${rejectionReason}`, 'warning') : ''}
 
     ${alertBox('If you believe this is an error or would like more information, please contact our support team.', 'info')}
 
@@ -274,7 +520,234 @@ export function partnerRejectedEmail(params: {
   return {
     subject: `Organization Verification Update - ${organizationName}`,
     html: emailWrapper(content),
-    text: `Dear ${partnerName},\n\nWe are unable to verify ${organizationName} at this time.\n\nIf you believe this is an error, please contact support.\n\n${APP_URL}/contact`
+    text: `Dear ${partnerName},\n\nWe are unable to verify ${organizationName} at this time.\n\n${rejectionReason ? `Reason: ${rejectionReason}\n\n` : ''}If you believe this is an error, please contact support.\n\n${APP_URL}/contact`
+  };
+}
+
+// Applicant welcome email - sent after signup
+export function applicantWelcomeEmail(params: {
+  applicantName: string;
+}): { subject: string; html: string; text: string } {
+  const { applicantName } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">🎓 Welcome to ${APP_NAME}!</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Dear ${applicantName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Thank you for joining ${APP_NAME}! We're thrilled to have you as part of our community of learners and future leaders.
+    </p>
+
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0 15px;">
+      Here's what you can do on our platform:
+    </p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #333; margin: 0 0 20px; padding-left: 20px;">
+      <li><strong>Browse Programs:</strong> Explore educational and business grant opportunities</li>
+      <li><strong>Apply for Grants:</strong> Submit applications for programs that match your goals</li>
+      <li><strong>Find a Mentor:</strong> Connect with experienced professionals for guidance</li>
+      <li><strong>Discover Opportunities:</strong> Access internships, apprenticeships, and more</li>
+    </ul>
+
+    ${alertBox('Complete your profile to increase your chances of being selected for programs and matched with mentors.', 'info')}
+
+    ${button('Explore Programs', `${APP_URL}/browse-programs`, '#28a745')}
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      We're here to support your journey. If you have any questions, don't hesitate to reach out!
+    </p>
+  `;
+
+  return {
+    subject: `Welcome to ${APP_NAME} - Your Journey Starts Here!`,
+    html: emailWrapper(content),
+    text: `Dear ${applicantName},\n\nWelcome to ${APP_NAME}!\n\nHere's what you can do:\n- Browse Programs: Explore educational and business grant opportunities\n- Apply for Grants: Submit applications for programs that match your goals\n- Find a Mentor: Connect with experienced professionals\n- Discover Opportunities: Access internships and more\n\nExplore programs: ${APP_URL}/browse-programs`
+  };
+}
+
+// Mentor welcome email - sent after signup
+export function mentorWelcomeEmail(params: {
+  mentorName: string;
+}): { subject: string; html: string; text: string } {
+  const { mentorName } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">🌟 Welcome to ${APP_NAME}!</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Dear ${mentorName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Thank you for your interest in becoming a mentor with ${APP_NAME}! Your willingness to guide and support the next generation is truly appreciated.
+    </p>
+
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0 15px;">
+      To get started as a mentor, please follow these steps:
+    </p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #333; margin: 0 0 20px; padding-left: 20px;">
+      <li><strong>Step 1:</strong> Complete your mentor profile with your expertise and experience</li>
+      <li><strong>Step 2:</strong> Submit your profile for review by our team</li>
+      <li><strong>Step 3:</strong> Once approved, start receiving mentorship requests!</li>
+    </ul>
+
+    ${alertBox('Your mentor profile will be reviewed by our team to ensure the best experience for mentees. This typically takes 1-2 business days.', 'info')}
+
+    ${button('Complete Mentor Profile', `${APP_URL}/mentor/profile`)}
+
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0 15px;">
+      As a mentor, you'll be able to:
+    </p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #333; margin: 0 0 20px; padding-left: 20px;">
+      <li>Guide mentees through their personal and professional development</li>
+      <li>Share your knowledge and industry insights</li>
+      <li>Make a lasting impact on someone's career journey</li>
+      <li>Join a community of like-minded professionals</li>
+    </ul>
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      Thank you for choosing to make a difference. We look forward to having you on board!
+    </p>
+  `;
+
+  return {
+    subject: `Welcome to ${APP_NAME} - Thank You for Becoming a Mentor!`,
+    html: emailWrapper(content),
+    text: `Dear ${mentorName},\n\nWelcome to ${APP_NAME}!\n\nTo get started as a mentor:\n1. Complete your mentor profile with your expertise\n2. Submit your profile for review (1-2 business days)\n3. Once approved, start receiving mentorship requests!\n\nComplete profile: ${APP_URL}/mentor/profile`
+  };
+}
+
+// Partner welcome email - sent after signup
+export function partnerWelcomeEmail(params: {
+  partnerName: string;
+}): { subject: string; html: string; text: string } {
+  const { partnerName } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">🤝 Welcome to ${APP_NAME}!</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Dear ${partnerName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Thank you for registering as a partner with ${APP_NAME}! We're excited to have you join our network of organizations making a difference.
+    </p>
+
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0 15px;">
+      To get started, please complete the following steps:
+    </p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #333; margin: 0 0 20px; padding-left: 20px;">
+      <li><strong>Step 1:</strong> Complete your organization profile</li>
+      <li><strong>Step 2:</strong> Submit for verification (typically 1-2 business days)</li>
+      <li><strong>Step 3:</strong> Once verified, start posting opportunities!</li>
+    </ul>
+
+    ${alertBox('Your organization must be verified before you can post opportunities. Our team reviews all partner applications to ensure quality.', 'info')}
+
+    ${button('Complete Organization Profile', `${APP_URL}/partner/organization`)}
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      If you have any questions, feel free to contact our support team.
+    </p>
+  `;
+
+  return {
+    subject: `Welcome to ${APP_NAME} Partner Network!`,
+    html: emailWrapper(content),
+    text: `Dear ${partnerName},\n\nWelcome to ${APP_NAME}!\n\nTo get started:\n1. Complete your organization profile\n2. Submit for verification (1-2 business days)\n3. Once verified, start posting opportunities!\n\nComplete profile: ${APP_URL}/partner/organization`
+  };
+}
+
+// Admin notification for new partner signup
+export function newPartnerSignupEmail(params: {
+  adminName: string;
+  partnerName: string;
+  partnerEmail: string;
+  organizationName: string;
+  partnerId: string;
+}): { subject: string; html: string; text: string } {
+  const { adminName, partnerName, partnerEmail, organizationName, partnerId } = params;
+
+  const content = `
+    <h2 style="color: #0070f3; margin: 0 0 20px;">🏢 New Partner Verification Request</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Hello ${adminName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      A new partner organization has submitted their profile for verification.
+    </p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Organization:</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${organizationName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Contact Person:</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${partnerName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Email:</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${partnerEmail}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Status:</strong></td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">Pending Verification</td>
+      </tr>
+    </table>
+
+    ${button('Review Partner', `${APP_URL}/admin/partners/${partnerId}`)}
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      Please review this partner application at your earliest convenience.
+    </p>
+  `;
+
+  return {
+    subject: `New Partner Verification - ${organizationName}`,
+    html: emailWrapper(content),
+    text: `New Partner Verification Request\n\nOrganization: ${organizationName}\nContact: ${partnerName} (${partnerEmail})\nStatus: Pending Verification\n\nReview: ${APP_URL}/admin/partners/${partnerId}`
+  };
+}
+
+// Partner verification rescinded email
+export function partnerVerificationRescindedEmail(params: {
+  partnerName: string;
+  organizationName: string;
+  reason?: string;
+}): { subject: string; html: string; text: string } {
+  const { partnerName, organizationName, reason } = params;
+
+  const content = `
+    <h2 style="color: #dc3545; margin: 0 0 20px;">⚠️ Organization Verification Status Update</h2>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      Dear ${partnerName},
+    </p>
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 0 0 15px;">
+      We regret to inform you that the verification status for <strong>${organizationName}</strong> has been rescinded and is now pending re-verification.
+    </p>
+
+    ${reason ? alertBox(`<strong>Reason:</strong><br>${reason}`, 'warning') : ''}
+
+    <p style="font-size: 16px; line-height: 1.6; color: #333; margin: 20px 0 15px;">
+      What this means:
+    </p>
+    <ul style="font-size: 16px; line-height: 1.8; color: #333; margin: 0 0 20px; padding-left: 20px;">
+      <li>Your organization is now in pending status</li>
+      <li>You cannot create new opportunities until re-verified</li>
+      <li>Existing opportunities remain visible but may be reviewed</li>
+    </ul>
+
+    ${alertBox('Please contact our support team if you have questions or need to provide additional information.', 'info')}
+
+    ${button('Contact Support', `${APP_URL}/contact`)}
+
+    <p style="font-size: 14px; line-height: 1.6; color: #666; margin: 30px 0 0;">
+      We appreciate your understanding and cooperation.
+    </p>
+  `;
+
+  return {
+    subject: `Verification Status Update - ${organizationName}`,
+    html: emailWrapper(content),
+    text: `Dear ${partnerName},\n\nThe verification status for ${organizationName} has been rescinded.\n\n${reason ? `Reason: ${reason}\n\n` : ''}Your organization is now pending re-verification. Please contact support if you have questions.\n\n${APP_URL}/contact`
   };
 }
 

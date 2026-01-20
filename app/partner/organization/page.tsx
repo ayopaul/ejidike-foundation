@@ -187,9 +187,10 @@ export default function OrganizationProfilePage() {
         throw orgError;
       }
 
-      // Notify admins about new partner verification request
+      // Notify admins about new partner verification request (in-app + email)
       if (isNewSubmission) {
         try {
+          // Send in-app notification
           await notifyAdmins({
             title: 'New Partner Verification Request',
             message: `${organization.organization_name} has submitted their organization profile for verification.`,
@@ -199,6 +200,18 @@ export default function OrganizationProfilePage() {
               organizationName: organization.organization_name,
               partnerId: profile.id
             }
+          });
+
+          // Send email notification to admins
+          await fetch('/api/partners/notify-admin-signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              partnerId: profile.id,
+              partnerName: contactInfo.full_name,
+              partnerEmail: profile.email || user.email,
+              organizationName: organization.organization_name
+            })
           });
         } catch (notifError) {
           console.error('Failed to notify admins:', notifError);

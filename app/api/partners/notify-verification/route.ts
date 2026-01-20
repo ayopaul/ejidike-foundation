@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { partnerId, status, organizationName } = body;
+    const { partnerId, status, organizationName, reason } = body;
 
     if (!partnerId || !status) {
       return NextResponse.json(
@@ -62,20 +62,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, we'll use Supabase's email system
-    // In production, you might want to use a service like Resend or SendGrid
-    const subject = status === 'verified'
-      ? 'Your Organization Has Been Verified - Ejidike Foundation'
-      : 'Update on Your Organization Application - Ejidike Foundation';
-
-    const message = status === 'verified'
-      ? `Dear ${partnerProfile.full_name},\n\nCongratulations! Your organization "${organizationName}" has been successfully verified on the Ejidike Foundation platform.\n\nYou can now:\n- Post internship and job opportunities\n- Connect with talented applicants\n- Access partner resources\n\nLog in to your dashboard to get started: ${request.nextUrl.origin}/partner/dashboard\n\nBest regards,\nEjidike Foundation Team`
-      : `Dear ${partnerProfile.full_name},\n\nThank you for your interest in partnering with the Ejidike Foundation.\n\nUnfortunately, we are unable to verify your organization "${organizationName}" at this time. If you believe this is an error or would like more information, please contact our support team.\n\nBest regards,\nEjidike Foundation Team`;
-
     // Send email using Brevo
     try {
       const { sendEmail } = await import('@/lib/email');
-      const { partnerVerifiedEmail, partnerRejectedEmail } = await import('@/lib/email-templates');
+      const { partnerVerifiedEmail, partnerRejectedEmail, partnerVerificationRescindedEmail } = await import('@/lib/email-templates');
 
       let emailContent;
       if (status === 'verified') {
@@ -83,10 +73,18 @@ export async function POST(request: NextRequest) {
           partnerName: partnerProfile.full_name,
           organizationName
         });
+      } else if (status === 'rescinded') {
+        emailContent = partnerVerificationRescindedEmail({
+          partnerName: partnerProfile.full_name,
+          organizationName,
+          reason: reason || undefined
+        });
       } else {
+        // rejected
         emailContent = partnerRejectedEmail({
           partnerName: partnerProfile.full_name,
-          organizationName
+          organizationName,
+          rejectionReason: reason || undefined
         });
       }
 

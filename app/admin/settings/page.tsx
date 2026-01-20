@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Loader2, Globe, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Loader2, Globe, Lock, Eye, EyeOff, AlertTriangle, Mail, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 interface ComingSoonSettings {
@@ -230,6 +231,34 @@ export default function AdminSettingsPage() {
                   Disable Coming Soon mode when you&apos;re ready to launch publicly.
                 </li>
               </ul>
+            </CardContent>
+          </Card>
+
+          {/* Email Templates Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                <CardTitle>Email Templates</CardTitle>
+              </div>
+              <CardDescription>
+                Preview all automated email templates used by the platform
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/admin/settings/email-templates">
+                <Button variant="outline" className="w-full justify-between">
+                  <span className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    View Email Templates
+                  </span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <p className="text-sm text-muted-foreground mt-3">
+                Preview 19 email templates including welcome emails, application notifications,
+                partner verification, mentorship updates, and more.
+              </p>
             </CardContent>
           </Card>
         </div>

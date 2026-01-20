@@ -7,7 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomBytes } from 'crypto';
 import { sendEmail } from '@/lib/email';
-import { emailVerificationEmail } from '@/lib/email-templates';
+import {
+  emailVerificationEmail,
+  applicantWelcomeEmail,
+  mentorWelcomeEmail,
+  partnerWelcomeEmail
+} from '@/lib/email-templates';
 
 // Use service role for admin operations
 const supabaseAdmin = createClient(
@@ -188,6 +193,30 @@ export async function POST(request: NextRequest) {
     if (!emailResult.success) {
       console.error('Failed to send verification email:', emailResult.error);
       // Don't fail registration if email fails, user can request resend
+    }
+
+    // Send role-specific welcome email
+    let welcomeEmail;
+    if (role === 'applicant') {
+      welcomeEmail = applicantWelcomeEmail({ applicantName: full_name });
+    } else if (role === 'mentor') {
+      welcomeEmail = mentorWelcomeEmail({ mentorName: full_name });
+    } else if (role === 'partner') {
+      welcomeEmail = partnerWelcomeEmail({ partnerName: full_name });
+    }
+
+    if (welcomeEmail) {
+      const welcomeResult = await sendEmail({
+        to: email,
+        toName: full_name,
+        subject: welcomeEmail.subject,
+        html: welcomeEmail.html,
+        text: welcomeEmail.text
+      });
+
+      if (!welcomeResult.success) {
+        console.error(`Failed to send ${role} welcome email:`, welcomeResult.error);
+      }
     }
 
     return NextResponse.json({
